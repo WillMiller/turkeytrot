@@ -214,10 +214,10 @@ Jane,Smith,jane@example.com,Female`}
                     <tbody className="divide-y divide-gray-200">
                       {parsedData.map((p, idx) => (
                         <tr key={idx} className="hover:bg-gray-50">
-                          <td className="py-2 px-3">{p.firstName}</td>
-                          <td className="py-2 px-3">{p.lastName}</td>
-                          <td className="py-2 px-3">{p.email}</td>
-                          <td className="py-2 px-3">{p.gender || '—'}</td>
+                          <td className="py-2 px-3 text-gray-900">{p.firstName}</td>
+                          <td className="py-2 px-3 text-gray-900">{p.lastName}</td>
+                          <td className="py-2 px-3 text-gray-900">{p.email}</td>
+                          <td className="py-2 px-3 text-gray-900">{p.gender || '—'}</td>
                         </tr>
                       ))}
                     </tbody>

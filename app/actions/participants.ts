@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import type { Participant } from '@/lib/types/database'
 
 export async function getParticipants() {
@@ -164,6 +164,7 @@ interface BulkParticipant {
 
 export async function bulkCreateParticipants(participants: BulkParticipant[]) {
   const supabase = await createClient()
+  const adminClient = createAdminClient()
 
   let successCount = 0
   const errors: string[] = []
@@ -203,11 +204,11 @@ export async function bulkCreateParticipants(participants: BulkParticipant[]) {
         continue
       }
 
-      // Create auth user with a temporary password
+      // Create auth user with a temporary password using admin client
       // User will need to reset password via password reset link
       const tempPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12)
 
-      const { error: authError } = await supabase.auth.admin.createUser({
+      const { error: authError } = await adminClient.auth.admin.createUser({
         email: p.email,
         password: tempPassword,
         email_confirm: true, // Auto-confirm email to avoid sending confirmation email
