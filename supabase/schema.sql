@@ -33,11 +33,11 @@ CREATE TABLE IF NOT EXISTS race_participants (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   race_id UUID NOT NULL REFERENCES races(id) ON DELETE CASCADE,
   participant_id UUID NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
-  bib_number INTEGER NOT NULL,
+  bib_number INTEGER, -- Nullable: assigned by admin before race day
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(race_id, participant_id),
-  UNIQUE(race_id, bib_number)
+  UNIQUE(race_id, bib_number) -- NULL values don't conflict with this constraint
 );
 
 -- Finish times table

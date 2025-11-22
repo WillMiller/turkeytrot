@@ -304,18 +304,7 @@ export default function ParticipantDashboard({ user, raceParticipations }: Parti
           </div>
         )}
 
-        {/* Empty State */}
-        {raceParticipations.length === 0 && (
-          <div className="rounded-lg bg-white p-12 text-center shadow">
-            <p className="text-lg text-gray-600 mb-4">You haven&apos;t registered for any races yet.</p>
-            <a
-              href="/register"
-              className="inline-flex rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-            >
-              Register for a Race
-            </a>
-          </div>
-        )}
+        {/* Empty State - removed since race registration is now in "Manage Race Registrations" section above */}
       </div>
     </div>
   )
