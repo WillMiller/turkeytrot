@@ -25,10 +25,40 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
   const [pendingFinishes, setPendingFinishes] = useState<PendingFinish[]>([])
   const [editingFinish, setEditingFinish] = useState<{id: string, bibNumber: number, finishTime: string} | null>(null)
   const [isOnline, setIsOnline] = useState(true)
+  const [searchStillRacing, setSearchStillRacing] = useState('')
+  const [searchFinished, setSearchFinished] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   const finishedCount = raceParticipants.filter(rp => rp.finish_time).length
-  const stillRacing = raceParticipants.filter(rp => !rp.finish_time)
+  const stillRacing = raceParticipants
+    .filter(rp => !rp.finish_time)
+    .filter(rp => {
+      if (!searchStillRacing) return true
+      const search = searchStillRacing.toLowerCase()
+      return (
+        rp.bib_number?.toString().includes(search) ||
+        rp.participant?.first_name?.toLowerCase().includes(search) ||
+        rp.participant?.last_name?.toLowerCase().includes(search)
+      )
+    })
+    .sort((a, b) => (a.bib_number || 0) - (b.bib_number || 0))
+
+  const finishedRacers = raceParticipants
+    .filter(rp => rp.finish_time)
+    .filter(rp => {
+      if (!searchFinished) return true
+      const search = searchFinished.toLowerCase()
+      return (
+        rp.bib_number?.toString().includes(search) ||
+        rp.participant?.first_name?.toLowerCase().includes(search) ||
+        rp.participant?.last_name?.toLowerCase().includes(search)
+      )
+    })
+    .sort((a, b) => {
+      const timeA = new Date(a.finish_time.adjusted_time || a.finish_time.finish_time).getTime()
+      const timeB = new Date(b.finish_time.adjusted_time || b.finish_time.finish_time).getTime()
+      return timeB - timeA
+    })
 
   // Load pending finishes from localStorage
   useEffect(() => {
@@ -107,7 +137,6 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
       }
     }
 
-    // Remove synced entries after a delay
     setTimeout(() => {
       setPendingFinishes(prev => prev.filter(pf => pf.status !== 'synced'))
       onUpdate()
@@ -130,7 +159,6 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
     setSuccess(null)
     setProcessing(true)
 
-    // Parse space-separated bib numbers
     const bibNumbersInput = bibInput.trim().split(/\s+/)
     const bibNumbers = bibNumbersInput.map(b => parseInt(b)).filter(b => !isNaN(b))
 
@@ -144,7 +172,6 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
 
     const finishTime = new Date().toISOString()
 
-    // Add to pending queue immediately (optimistic UI)
     const newPending: PendingFinish[] = bibNumbers.map(bibNumber => ({
       bibNumber,
       finishTime,
@@ -152,15 +179,13 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
     }))
 
     setPendingFinishes(prev => [...prev, ...newPending])
-    setSuccess(`Recorded ${bibNumbers.length} bib${bibNumbers.length > 1 ? 's' : ''}! ${!isOnline ? '(Offline - will sync when connected)' : ''}`)
+    setSuccess(`✓ ${bibNumbers.length} bib${bibNumbers.length > 1 ? 's' : ''}`)
     setBibInput('')
     setProcessing(false)
     inputRef.current?.focus()
 
-    // Clear success message after 2 seconds
-    setTimeout(() => setSuccess(null), 2000)
+    setTimeout(() => setSuccess(null), 1500)
 
-    // Try to sync immediately if online
     if (isOnline) {
       if (bibNumbers.length === 1) {
         const result = await recordFinishTime(race.id, bibNumbers[0], finishTime)
@@ -210,7 +235,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
     if (result?.error) {
       setError(result.error)
     } else {
-      setSuccess(`Updated bib #${editingFinish.bibNumber}`)
+      setSuccess(`✓ Updated #${editingFinish.bibNumber}`)
       setEditingFinish(null)
       setTimeout(() => {
         onUpdate()
@@ -227,7 +252,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
     if (result?.error) {
       setError(result.error)
     } else {
-      setSuccess(`Deleted finish time for bib #${bibNumber}`)
+      setSuccess(`✓ Deleted #${bibNumber}`)
       setTimeout(() => {
         onUpdate()
         setSuccess(null)
@@ -247,194 +272,262 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
     return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
   }
 
-  const recentFinishes = raceParticipants
-    .filter(rp => rp.finish_time)
-    .sort((a, b) => {
-      const timeA = new Date(a.finish_time.adjusted_time || a.finish_time.finish_time).getTime()
-      const timeB = new Date(b.finish_time.adjusted_time || b.finish_time.finish_time).getTime()
-      return timeB - timeA
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
     })
-    .slice(0, 10)
+  }
+
+  const getRacePosition = (rp: any) => {
+    return finishedRacers.findIndex(r => r.id === rp.id) + 1
+  }
+
+  if (!race.start_time) {
+    return (
+      <div className="rounded-md bg-yellow-50 p-4">
+        <p className="text-sm text-yellow-800">
+          Race has not been started yet. Go to the race detail page and click &quot;Start Race&quot; to begin timing.
+        </p>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6">
-      {!race.start_time ? (
-        <div className="rounded-md bg-yellow-50 p-4">
-          <p className="text-sm text-yellow-800">
-            Race has not been started yet. Go to the race detail page and click &quot;Start Race&quot; to begin timing.
-          </p>
+    <div className="h-[calc(100vh-12rem)] flex flex-col gap-3">
+      {/* Top Bar - Status & Entry */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="p-3 border-b border-gray-200">
+          <div className="flex items-center justify-between gap-4">
+            {/* Stats */}
+            <div className="flex items-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">Total:</span>
+                <span className="font-bold text-gray-900">{raceParticipants.length}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">Finished:</span>
+                <span className="font-bold text-green-600">{finishedCount}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">Racing:</span>
+                <span className="font-bold text-orange-600">{stillRacing.length}</span>
+              </div>
+              {pendingFinishes.filter(pf => pf.status === 'pending').length > 0 && (
+                <div className="flex items-center gap-2 px-2 py-1 bg-blue-50 rounded">
+                  <span className="text-xs text-blue-700">Pending:</span>
+                  <span className="text-xs font-bold text-blue-900">{pendingFinishes.filter(pf => pf.status === 'pending').length}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Online Status */}
+            <div className="flex items-center gap-2">
+              <div className={`h-2 w-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+              <span className="text-xs text-gray-600">{isOnline ? 'Online' : 'Offline'}</span>
+            </div>
+          </div>
         </div>
-      ) : (
-        <>
-          {/* Connection Status */}
-          {!isOnline && (
-            <div className="rounded-md bg-orange-50 border border-orange-200 p-4">
-              <p className="text-sm text-orange-800 font-semibold">
-                ⚠️ Offline Mode - Times will sync automatically when connection is restored
-              </p>
-            </div>
-          )}
 
-          {/* Pending Syncs */}
-          {pendingFinishes.filter(pf => pf.status === 'pending').length > 0 && (
-            <div className="rounded-md bg-blue-50 border border-blue-200 p-4">
-              <p className="text-sm text-blue-800">
-                📝 {pendingFinishes.filter(pf => pf.status === 'pending').length} finish time(s) pending sync...
-              </p>
+        {/* Entry Form */}
+        <div className="p-3">
+          <form onSubmit={handleSubmit} className="flex gap-3">
+            <div className="flex-1">
+              <input
+                ref={inputRef}
+                type="text"
+                value={bibInput}
+                onChange={(e) => setBibInput(e.target.value)}
+                disabled={processing}
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-lg font-mono font-bold text-center text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                placeholder="Enter bib #"
+                autoFocus
+              />
             </div>
-          )}
+            <button
+              type="submit"
+              disabled={processing || !bibInput.trim()}
+              className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Record
+            </button>
+          </form>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-lg bg-blue-50 p-4">
-              <p className="text-sm text-blue-600">Total Racers</p>
-              <p className="text-2xl font-bold text-blue-900">{raceParticipants.length}</p>
-            </div>
-            <div className="rounded-lg bg-green-50 p-4">
-              <p className="text-sm text-green-600">Finished</p>
-              <p className="text-2xl font-bold text-green-900">{finishedCount}</p>
-            </div>
-            <div className="rounded-lg bg-orange-50 p-4">
-              <p className="text-sm text-orange-600">Still Racing</p>
-              <p className="text-2xl font-bold text-orange-900">{stillRacing.length}</p>
-            </div>
-          </div>
-
-          {/* Quick Entry Form */}
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Record Finish Time</h3>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Messages */}
+          {(error || success) && (
+            <div className="mt-2">
               {error && (
-                <div className="rounded-md bg-red-50 p-4">
-                  <p className="text-sm text-red-800">{error}</p>
+                <div className="text-sm text-red-600 bg-red-50 px-3 py-1 rounded">
+                  {error}
                 </div>
               )}
-
               {success && (
-                <div className="rounded-md bg-green-50 p-4">
-                  <p className="text-sm text-green-800">{success}</p>
+                <div className="text-sm text-green-600 bg-green-50 px-3 py-1 rounded">
+                  {success}
                 </div>
               )}
-
-              <div>
-                <label htmlFor="bib_input" className="block text-sm font-medium text-gray-700 mb-2">
-                  Enter Bib Number(s) and Press Enter
-                </label>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  id="bib_input"
-                  value={bibInput}
-                  onChange={(e) => setBibInput(e.target.value)}
-                  disabled={processing}
-                  className="block w-full rounded-md border border-gray-300 px-4 py-3 text-2xl text-center font-bold text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 disabled:opacity-50"
-                  placeholder="123 or 123 124 125"
-                  autoFocus
-                />
-                <p className="mt-2 text-sm text-gray-500">
-                  Enter one bib number (e.g., <strong>123</strong>) or multiple space-separated bibs (e.g., <strong>123 124 125</strong>) for racers finishing at the same time. Press Enter to record.
-                </p>
-              </div>
-            </form>
-          </div>
-
-          {/* Still Racing */}
-          {stillRacing.length > 0 && (
-            <div className="rounded-lg bg-white p-6 shadow">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Still Racing ({stillRacing.length})</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {stillRacing.map((rp) => (
-                  <div key={rp.id} className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                    <span className="rounded-md bg-orange-100 px-2 py-1 text-sm font-bold text-orange-700">
-                      #{rp.bib_number}
-                    </span>
-                    <span className="text-sm text-gray-700 truncate">
-                      {[rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ') || 'Unnamed'}
-                    </span>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
+        </div>
+      </div>
 
-          {/* Recent Finishes */}
-          {recentFinishes.length > 0 && (
-            <div className="rounded-lg bg-white p-6 shadow">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Finishes (Last 10)</h3>
-              <div className="space-y-2">
-                {recentFinishes.map((rp, index) => {
+      {/* Split Panes */}
+      <div className="flex-1 grid grid-cols-2 gap-3 min-h-0">
+        {/* Left: Still Racing */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col min-h-0">
+          <div className="p-3 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-gray-900">Still Racing ({stillRacing.length})</h3>
+            </div>
+            <input
+              type="text"
+              value={searchStillRacing}
+              onChange={(e) => setSearchStillRacing(e.target.value)}
+              placeholder="Search bib or name..."
+              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left p-2 font-medium text-gray-700">Bib</th>
+                  <th className="text-left p-2 font-medium text-gray-700">Name</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {stillRacing.map((rp) => (
+                  <tr key={rp.id} className="hover:bg-gray-50">
+                    <td className="p-2">
+                      <span className="inline-flex items-center justify-center min-w-[3rem] px-2 py-1 bg-orange-100 text-orange-700 font-bold rounded text-xs">
+                        #{rp.bib_number}
+                      </span>
+                    </td>
+                    <td className="p-2 text-gray-900">
+                      {[rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ') || 'Unnamed'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {stillRacing.length === 0 && (
+              <div className="p-8 text-center text-gray-500 text-sm">
+                {searchStillRacing ? 'No matching racers' : 'All racers have finished!'}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Finished */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col min-h-0">
+          <div className="p-3 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-gray-900">Finished ({finishedCount})</h3>
+            </div>
+            <input
+              type="text"
+              value={searchFinished}
+              onChange={(e) => setSearchFinished(e.target.value)}
+              placeholder="Search bib or name..."
+              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left p-2 font-medium text-gray-700 w-12">#</th>
+                  <th className="text-left p-2 font-medium text-gray-700">Bib</th>
+                  <th className="text-left p-2 font-medium text-gray-700">Name</th>
+                  <th className="text-right p-2 font-medium text-gray-700">Time</th>
+                  <th className="text-right p-2 font-medium text-gray-700 w-20">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {finishedRacers.map((rp) => {
                   const finishTime = rp.finish_time.adjusted_time || rp.finish_time.finish_time
                   const isEditing = editingFinish?.id === rp.finish_time.id
+                  const position = getRacePosition(rp)
 
                   return (
-                    <div key={rp.id} className="flex items-center justify-between border-b border-gray-200 pb-2">
-                      <div className="flex items-center gap-4 flex-1">
-                        <span className="text-sm text-gray-500">#{index + 1}</span>
-                        <span className="rounded-md bg-blue-100 px-3 py-1 text-sm font-bold text-blue-700">
-                          Bib #{rp.bib_number}
+                    <tr key={rp.id} className="hover:bg-gray-50">
+                      <td className="p-2 text-gray-500 font-medium">{position}</td>
+                      <td className="p-2">
+                        <span className="inline-flex items-center justify-center min-w-[3rem] px-2 py-1 bg-green-100 text-green-700 font-bold rounded text-xs">
+                          #{rp.bib_number}
                         </span>
-                        <span className="font-medium text-gray-900">
-                          {[rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ') || 'Unnamed'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4">
+                      </td>
+                      <td className="p-2 text-gray-900">
+                        {[rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ') || 'Unnamed'}
+                      </td>
+                      <td className="p-2 text-right">
                         {isEditing && editingFinish ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="datetime-local"
-                              value={editingFinish.finishTime}
-                              onChange={(e) => setEditingFinish({ ...editingFinish, finishTime: e.target.value })}
-                              className="rounded border border-gray-300 px-2 py-1 text-sm"
-                            />
+                          <input
+                            type="datetime-local"
+                            value={editingFinish.finishTime}
+                            onChange={(e) => setEditingFinish({ ...editingFinish, finishTime: e.target.value })}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                          />
+                        ) : (
+                          <div>
+                            <div className="font-mono font-bold text-gray-900">
+                              {formatElapsedTime(race.start_time!, finishTime)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {formatTime(finishTime)}
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-2 text-right">
+                        {isEditing && editingFinish ? (
+                          <div className="flex gap-1 justify-end">
                             <button
                               onClick={handleSaveEdit}
-                              className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
+                              className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
                             >
                               Save
                             </button>
                             <button
                               onClick={() => setEditingFinish(null)}
-                              className="rounded bg-gray-200 px-3 py-1 text-sm text-gray-700 hover:bg-gray-300"
+                              className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
                             >
                               Cancel
                             </button>
                           </div>
                         ) : (
-                          <>
-                            <div className="text-right">
-                              <div className="font-mono text-lg font-bold text-gray-900">
-                                {formatElapsedTime(race.start_time!, finishTime)}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {new Date(finishTime).toLocaleTimeString()}
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleEdit(rp)}
-                                className="rounded bg-yellow-100 px-2 py-1 text-xs text-yellow-700 hover:bg-yellow-200"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDelete(rp.finish_time.id, rp.bib_number)}
-                                className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:bg-red-200"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </>
+                          <div className="flex gap-1 justify-end">
+                            <button
+                              onClick={() => handleEdit(rp)}
+                              className="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200"
+                              title="Edit time"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(rp.finish_time.id, rp.bib_number)}
+                              className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                              title="Delete"
+                            >
+                              ✕
+                            </button>
+                          </div>
                         )}
-                      </div>
-                    </div>
+                      </td>
+                    </tr>
                   )
                 })}
+              </tbody>
+            </table>
+            {finishedRacers.length === 0 && (
+              <div className="p-8 text-center text-gray-500 text-sm">
+                {searchFinished ? 'No matching finishers' : 'No finishers yet'}
               </div>
-            </div>
-          )}
-        </>
-      )}
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
