@@ -256,6 +256,23 @@ export async function startRace(raceId: string) {
   return { success: true }
 }
 
+export async function endRace(raceId: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('races')
+    .update({ end_time: new Date().toISOString() })
+    .eq('id', raceId)
+
+  if (error) {
+    console.error('Error ending race:', error)
+    return { error: error.message }
+  }
+
+  revalidatePath('/')
+  return { success: true }
+}
+
 export async function recordFinishTime(raceId: string, bibNumber: number, finishTime?: string) {
   const supabase = await createClient()
 

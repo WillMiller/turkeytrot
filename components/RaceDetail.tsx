@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getRaceParticipants, startRace } from '@/app/actions/races'
+import { getRaceParticipants, startRace, endRace } from '@/app/actions/races'
 import type { Race } from '@/lib/types/database'
 import ParticipantManager from './ParticipantManager'
 import RaceTiming from './RaceTiming'
@@ -47,6 +47,29 @@ export default function RaceDetail({ race, onBack }: RaceDetailProps) {
     }
   }
 
+  const handleEndRace = async () => {
+    // Count participants without finish times
+    const stillRacing = raceParticipants.filter(rp => rp.bib_number && !rp.finish_time).length
+
+    let confirmMessage = 'Are you sure you want to finish this race? This will stop the timer and mark the race as complete.'
+
+    if (stillRacing > 0) {
+      confirmMessage = `Warning: ${stillRacing} participant(s) with assigned bib numbers have not finished yet.\n\nAre you sure you want to finish this race? You can still edit finish times afterwards if needed.`
+    }
+
+    if (!confirm(confirmMessage)) {
+      return
+    }
+
+    const result = await endRace(race.id)
+    if (result.success) {
+      race.end_time = new Date().toISOString()
+      loadRaceParticipants()
+    } else if (result.error) {
+      alert(result.error)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -67,17 +90,32 @@ export default function RaceDetail({ race, onBack }: RaceDetailProps) {
                   • Started at {new Date(race.start_time).toLocaleTimeString()}
                 </span>
               )}
+              {race.end_time && (
+                <span className="ml-2 text-blue-600">
+                  • Finished at {new Date(race.end_time).toLocaleTimeString()}
+                </span>
+              )}
             </p>
           </div>
         </div>
-        {!isStarted && (
-          <button
-            onClick={handleStartRace}
-            className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-          >
-            Start Race
-          </button>
-        )}
+        <div className="flex gap-3">
+          {!isStarted && !race.end_time && (
+            <button
+              onClick={handleStartRace}
+              className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+            >
+              Start Race
+            </button>
+          )}
+          {isStarted && !race.end_time && (
+            <button
+              onClick={handleEndRace}
+              className="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
+            >
+              Finish Race
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
