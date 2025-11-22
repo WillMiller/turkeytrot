@@ -152,7 +152,7 @@ export default function HomePage() {
             Ready to Join Us?
           </h2>
           <p className="text-xl text-orange-100 mb-8">
-            Register now to secure your spot in this year's Turkey Trot!
+            Register now to secure your spot in this year&apos;s Turkey Trot!
           </p>
           <Link
             href="/register"
