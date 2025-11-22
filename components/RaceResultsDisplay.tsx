@@ -30,6 +30,7 @@ export default function RaceResultsDisplay() {
   const [autoScroll, setAutoScroll] = useState(false)
   const [scrollSpeed, setScrollSpeed] = useState(3000) // milliseconds per item
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Load races on mount
   useEffect(() => {
@@ -244,93 +245,99 @@ export default function RaceResultsDisplay() {
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col bg-gradient-to-br from-blue-50 to-orange-50">
       {/* Controls Bar */}
-      <div className="bg-white shadow-sm border-b border-gray-200 p-4">
+      <div className="bg-white shadow-sm border-b border-gray-200 p-3">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between gap-4 mb-3">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between gap-3">
+            {/* Left: Race Info */}
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setSelectedRace(null)}
                 className="text-sm text-gray-600 hover:text-gray-900 whitespace-nowrap"
               >
-                ← Change Race
+                ← Change
               </button>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">{selectedRace.name}</h2>
-                <p className="text-sm text-gray-600">
-                  {new Date(selectedRace.race_date).toLocaleDateString()} • {finishedRacers.length} finishers
-                </p>
+              <div className="border-l border-gray-300 pl-3">
+                <h2 className="text-base font-bold text-gray-900">{selectedRace.name}</h2>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 flex-wrap">
+            {/* Center: Search */}
+            <div className="flex-1 max-w-md">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name or bib number..."
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Right: Controls */}
+            <div className="flex items-center gap-2">
               {/* Category Type */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600 whitespace-nowrap">Category:</label>
+              <select
+                value={categoryType}
+                onChange={(e) => {
+                  setCategoryType(e.target.value as CategoryType)
+                  setCurrentIndex(0)
+                }}
+                className="rounded-md border border-gray-300 px-2 py-1.5 text-sm bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="overall">Overall</option>
+                <option value="gender">By Gender</option>
+                <option value="age">By Age</option>
+                <option value="gender-age">Gender & Age</option>
+              </select>
+
+              {/* Speed Control - Always visible when multiple categories */}
+              {categorizedResults.length > 1 && (
                 <select
-                  value={categoryType}
-                  onChange={(e) => {
-                    setCategoryType(e.target.value as CategoryType)
-                    setCurrentIndex(0)
-                  }}
-                  className="rounded-md border border-gray-300 px-3 py-2 text-sm bg-white"
+                  value={scrollSpeed}
+                  onChange={(e) => setScrollSpeed(Number(e.target.value))}
+                  className="rounded-md border border-gray-300 px-2 py-1.5 text-sm bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
-                  <option value="overall">Overall</option>
-                  <option value="gender">By Gender</option>
-                  <option value="age">By Age</option>
-                  <option value="gender-age">By Gender & Age</option>
+                  <option value={2000}>Fast</option>
+                  <option value={3000}>Medium</option>
+                  <option value={5000}>Slow</option>
                 </select>
-              </div>
+              )}
 
               {/* Auto Scroll Toggle */}
-              <button
-                onClick={() => setAutoScroll(!autoScroll)}
-                className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap ${
-                  autoScroll
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {autoScroll ? '⏸ Pause' : '▶ Auto Scroll'}
-              </button>
+              {categorizedResults.length > 1 && (
+                <button
+                  onClick={() => setAutoScroll(!autoScroll)}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap ${
+                    autoScroll
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {autoScroll ? '⏸ Pause' : '▶ Auto'}
+                </button>
+              )}
 
-              {/* Speed Control */}
-              {autoScroll && (
-                <div className="flex items-center gap-2">
-                  <label className="text-sm text-gray-600 whitespace-nowrap">Speed:</label>
-                  <select
-                    value={scrollSpeed}
-                    onChange={(e) => setScrollSpeed(Number(e.target.value))}
-                    className="rounded-md border border-gray-300 px-3 py-2 text-sm bg-white"
+              {/* Manual Navigation */}
+              {!autoScroll && categorizedResults.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setCurrentIndex((prev) => (prev - 1 + categorizedResults.length) % categorizedResults.length)}
+                    className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
                   >
-                    <option value={2000}>Fast (2s)</option>
-                    <option value={3000}>Medium (3s)</option>
-                    <option value={5000}>Slow (5s)</option>
-                  </select>
-                </div>
+                    ←
+                  </button>
+                  <span className="text-sm text-gray-600 whitespace-nowrap">
+                    {currentIndex + 1}/{categorizedResults.length}
+                  </span>
+                  <button
+                    onClick={() => setCurrentIndex((prev) => (prev + 1) % categorizedResults.length)}
+                    className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                  >
+                    →
+                  </button>
+                </>
               )}
             </div>
           </div>
-
-          {/* Manual Navigation */}
-          {!autoScroll && categorizedResults.length > 1 && (
-            <div className="flex items-center justify-center gap-4 pt-3 border-t border-gray-200">
-              <button
-                onClick={() => setCurrentIndex((prev) => (prev - 1 + categorizedResults.length) % categorizedResults.length)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                ← Previous
-              </button>
-              <span className="text-sm text-gray-600">
-                {currentIndex + 1} of {categorizedResults.length} categories
-              </span>
-              <button
-                onClick={() => setCurrentIndex((prev) => (prev + 1) % categorizedResults.length)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Next →
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -339,12 +346,22 @@ export default function RaceResultsDisplay() {
         {currentCategory ? (
           <div className="h-full bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col">
             {/* Category Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 text-center">
-              <h2 className="text-4xl font-bold">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 flex items-center justify-between">
+              <h2 className="text-2xl font-bold">
                 {currentCategory.category}
               </h2>
-              <p className="text-lg mt-2 opacity-90">
-                {currentCategory.results.length} {currentCategory.results.length === 1 ? 'Finisher' : 'Finishers'}
+              <p className="text-sm opacity-90">
+                {currentCategory.results.filter(rp => {
+                  if (!searchQuery) return true
+                  const search = searchQuery.toLowerCase()
+                  const name = [rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ').toLowerCase()
+                  return name.includes(search) || rp.bib_number?.toString().includes(search)
+                }).length} {currentCategory.results.filter(rp => {
+                  if (!searchQuery) return true
+                  const search = searchQuery.toLowerCase()
+                  const name = [rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ').toLowerCase()
+                  return name.includes(search) || rp.bib_number?.toString().includes(search)
+                }).length === 1 ? 'Result' : 'Results'}
               </p>
             </div>
 
@@ -368,7 +385,12 @@ export default function RaceResultsDisplay() {
                       </td>
                     </tr>
                   ) : (
-                    currentCategory.results.map((rp, index) => {
+                    currentCategory.results.filter(rp => {
+                      if (!searchQuery) return true
+                      const search = searchQuery.toLowerCase()
+                      const name = [rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ').toLowerCase()
+                      return name.includes(search) || rp.bib_number?.toString().includes(search)
+                    }).map((rp, index) => {
                       const finishTime = rp.finish_time.adjusted_time || rp.finish_time.finish_time
                       const elapsed = formatElapsedTime(selectedRace.start_time!, finishTime)
                       const clockTime = new Date(finishTime).toLocaleTimeString('en-US', {

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { participantSignout } from '@/app/actions/participant-auth'
 import { getAvailableRaces } from '@/app/actions/public'
 import { registerForAdditionalRaces } from '@/app/actions/participant'
+import ParticipantRaceResults from './ParticipantRaceResults'
 import type { User } from '@supabase/supabase-js'
 import Link from 'next/link'
 
@@ -45,6 +46,7 @@ export default function ParticipantDashboard({ user, raceParticipations }: Parti
   const [selectedRaces, setSelectedRaces] = useState<string[]>([])
   const [registering, setRegistering] = useState(false)
   const [registrationMessage, setRegistrationMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  const [showResults, setShowResults] = useState(false)
 
   // Load available races on mount
   useEffect(() => {
@@ -269,49 +271,74 @@ export default function ParticipantDashboard({ user, raceParticipations }: Parti
           </div>
         )}
 
-        {/* Completed Races */}
-        {completedRaces.length > 0 && (
-          <div>
-            <h2 className="mb-4 text-2xl font-bold text-gray-900">Race Results</h2>
-            <div className="space-y-4">
-              {completedRaces.map((rp) => {
-                const finishTime = rp.finish_time?.adjusted_time || rp.finish_time?.finish_time
-                const elapsedTime = rp.race.start_time && finishTime
-                  ? formatElapsedTime(rp.race.start_time, finishTime)
-                  : 'N/A'
+        {/* Race Results */}
+        <div className="mb-8">
+          <div className="rounded-lg bg-white p-6 shadow">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">Race Results</h2>
+              {!showResults && (
+                <button
+                  onClick={() => setShowResults(true)}
+                  className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+                >
+                  View All Results
+                </button>
+              )}
+            </div>
 
-                return (
-                  <div key={rp.id} className="rounded-lg bg-white p-6 shadow">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900">{rp.race.name}</h3>
-                        <p className="text-sm text-gray-600">
-                          {new Date(rp.race.race_date).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })}
-                        </p>
-                        <p className="mt-2 text-xs text-gray-500">
-                          Bib #{rp.bib_number}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-gray-600">Finish Time</p>
-                        <p className="text-3xl font-bold text-gray-900 font-mono">{elapsedTime}</p>
-                        {finishTime && (
-                          <p className="mt-1 text-xs text-gray-500">
-                            {new Date(finishTime).toLocaleTimeString()}
+            {showResults ? (
+              <div>
+                <button
+                  onClick={() => setShowResults(false)}
+                  className="mb-4 text-sm text-blue-600 hover:text-blue-700"
+                >
+                  ← Back to my results
+                </button>
+                <ParticipantRaceResults races={raceParticipations.map(rp => rp.race)} />
+              </div>
+            ) : completedRaces.length > 0 ? (
+              <div className="space-y-4">
+                {completedRaces.map((rp) => {
+                  const finishTime = rp.finish_time?.adjusted_time || rp.finish_time?.finish_time
+                  const elapsedTime = rp.race.start_time && finishTime
+                    ? formatElapsedTime(rp.race.start_time, finishTime)
+                    : 'N/A'
+
+                  return (
+                    <div key={rp.id} className="rounded-lg bg-gray-50 p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900">{rp.race.name}</h3>
+                          <p className="text-sm text-gray-600">
+                            {new Date(rp.race.race_date).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
                           </p>
-                        )}
+                          <p className="mt-2 text-xs text-gray-500">
+                            Bib #{rp.bib_number}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-600">Your Time</p>
+                          <p className="text-3xl font-bold text-gray-900 font-mono">{elapsedTime}</p>
+                          {finishTime && (
+                            <p className="mt-1 text-xs text-gray-500">
+                              {new Date(finishTime).toLocaleTimeString()}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-600">No completed races yet.</p>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Empty State - removed since race registration is now in "Manage Race Registrations" section above */}
       </div>
