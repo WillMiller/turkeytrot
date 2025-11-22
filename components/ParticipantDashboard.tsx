@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { participantSignout } from '@/app/actions/participant-auth'
 import { getAvailableRaces } from '@/app/actions/public'
-import { registerForAdditionalRaces, unregisterFromRace } from '@/app/actions/participant'
+import { registerForAdditionalRaces } from '@/app/actions/participant'
 import type { User } from '@supabase/supabase-js'
 import Link from 'next/link'
 
