@@ -98,7 +98,7 @@ export default function ImportEmailsPage() {
             <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
               <p className="text-sm text-blue-800">
                 <strong>Format:</strong> Enter one email per line, or separate with commas.
-                Users will be able to claim their account by visiting the "Claim Account" page.
+                Users will be able to claim their account by visiting the &quot;Claim Account&quot; page.
               </p>
             </div>
 
@@ -134,8 +134,8 @@ export default function ImportEmailsPage() {
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Next Steps</h3>
             <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
               <li>After importing, users can visit <code className="bg-gray-100 px-2 py-1 rounded">/claim-account</code></li>
-              <li>They'll enter their email and receive a password reset link</li>
-              <li>After setting their password, they'll complete their profile with additional information</li>
+              <li>They&apos;ll enter their email and receive a password reset link</li>
+              <li>After setting their password, they&apos;ll complete their profile with additional information</li>
               <li>They can then access their account and register for races</li>
             </ol>
           </div>

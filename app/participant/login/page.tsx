@@ -237,7 +237,7 @@ export default function ParticipantLoginPage() {
                     Register for Upcoming Races (Optional)
                   </h3>
                   <p className="text-sm text-gray-600 mb-3">
-                    Select which races you'd like to register for. Bib numbers will be assigned on race day.
+                    Select which races you&apos;d like to register for. Bib numbers will be assigned on race day.
                   </p>
                   <div className="space-y-2">
                     {races.map(race => (

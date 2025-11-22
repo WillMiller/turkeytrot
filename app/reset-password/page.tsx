@@ -36,11 +36,11 @@ export default function ResetPasswordPage() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Check Your Email</h2>
           <p className="text-gray-600 mb-6">
-            We've sent a password reset link to <strong>{email}</strong>.
+            We&apos;ve sent a password reset link to <strong>{email}</strong>.
             Click the link in the email to reset your password.
           </p>
           <p className="text-sm text-gray-500">
-            Didn't receive the email? Check your spam folder or try again.
+            Didn&apos;t receive the email? Check your spam folder or try again.
           </p>
           <div className="mt-6">
             <button
@@ -66,7 +66,7 @@ export default function ResetPasswordPage() {
             Reset Your Password
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your email address and we&apos;ll send you a link to reset your password.
           </p>
         </div>
 
@@ -110,7 +110,7 @@ export default function ResetPasswordPage() {
               </a>
             </p>
             <p>
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <a href="/register" className="font-medium text-blue-600 hover:text-blue-500">
                 Register here
               </a>

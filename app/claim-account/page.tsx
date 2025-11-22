@@ -70,7 +70,7 @@ export default function ClaimAccountPage() {
           <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
             <p className="text-sm text-blue-800">
               If you registered via email or another registration method, enter your email below.
-              We'll send you a link to set your password and complete your profile.
+              We&apos;ll send you a link to set your password and complete your profile.
             </p>
           </div>
 

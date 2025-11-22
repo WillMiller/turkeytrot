@@ -39,7 +39,7 @@ export default function HomePage() {
               Sausalito Turkey Trot
             </h2>
             <p className="mt-6 text-xl text-orange-100">
-              Join us for Sausalito's favorite Thanksgiving tradition!
+              Join us for Sausalito&apos;s favorite Thanksgiving tradition!
             </p>
             <p className="mt-2 text-2xl font-semibold text-white">
               Thanksgiving Day • 8:00 AM
@@ -117,7 +117,7 @@ export default function HomePage() {
               The Sausalito Turkey Trot is a cherished Thanksgiving Day tradition that brings our community together for a fun, festive 5K run/walk along the beautiful Sausalito waterfront.
             </p>
             <p className="mt-4">
-              Whether you're a competitive runner looking to burn off some calories before the big meal, or a family looking for a fun holiday activity, the Turkey Trot welcomes everyone! Join your neighbors for this FREE community event.
+              Whether you&apos;re a competitive runner looking to burn off some calories before the big meal, or a family looking for a fun holiday activity, the Turkey Trot welcomes everyone! Join your neighbors for this FREE community event.
             </p>
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-lg shadow">

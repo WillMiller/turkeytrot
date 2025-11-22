@@ -48,7 +48,7 @@ export default function CompleteAccountPage() {
 
           <div className="bg-green-50 border border-green-200 rounded-md p-4">
             <p className="text-sm text-green-800">
-              Great! Your password has been set. Now let's complete your profile.
+              Great! Your password has been set. Now let&apos;s complete your profile.
             </p>
           </div>
 
