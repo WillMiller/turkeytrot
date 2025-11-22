@@ -27,6 +27,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
   const [isOnline, setIsOnline] = useState(true)
   const [searchStillRacing, setSearchStillRacing] = useState('')
   const [searchFinished, setSearchFinished] = useState('')
+  const [raceElapsed, setRaceElapsed] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   const finishedCount = raceParticipants.filter(rp => rp.finish_time).length
@@ -107,6 +108,28 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
   useEffect(() => {
     inputRef.current?.focus()
   }, [finishedCount])
+
+  // Race clock - update every second
+  useEffect(() => {
+    if (!race.start_time) return
+
+    const updateClock = () => {
+      const start = new Date(race.start_time!).getTime()
+      const now = Date.now()
+      const elapsed = now - start
+
+      const hours = Math.floor(elapsed / (1000 * 60 * 60))
+      const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60))
+      const seconds = Math.floor((elapsed % (1000 * 60)) / 1000)
+
+      setRaceElapsed(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
+    }
+
+    updateClock() // Initial update
+    const interval = setInterval(updateClock, 1000) // Update every second
+
+    return () => clearInterval(interval)
+  }, [race.start_time])
 
   const syncPendingFinishes = async () => {
     const pending = pendingFinishes.filter(pf => pf.status === 'pending')
@@ -302,6 +325,14 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
           <div className="flex items-center justify-between gap-4">
             {/* Stats */}
             <div className="flex items-center gap-6 text-sm">
+              {/* Race Clock */}
+              <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-lg border border-blue-200">
+                <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-mono font-bold text-blue-900 text-base">{raceElapsed}</span>
+              </div>
+
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">Total:</span>
                 <span className="font-bold text-gray-900">{raceParticipants.length}</span>
@@ -315,9 +346,9 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
                 <span className="font-bold text-orange-600">{stillRacing.length}</span>
               </div>
               {pendingFinishes.filter(pf => pf.status === 'pending').length > 0 && (
-                <div className="flex items-center gap-2 px-2 py-1 bg-blue-50 rounded">
-                  <span className="text-xs text-blue-700">Pending:</span>
-                  <span className="text-xs font-bold text-blue-900">{pendingFinishes.filter(pf => pf.status === 'pending').length}</span>
+                <div className="flex items-center gap-2 px-2 py-1 bg-yellow-50 rounded border border-yellow-200">
+                  <span className="text-xs text-yellow-700">Pending:</span>
+                  <span className="text-xs font-bold text-yellow-900">{pendingFinishes.filter(pf => pf.status === 'pending').length}</span>
                 </div>
               )}
             </div>
