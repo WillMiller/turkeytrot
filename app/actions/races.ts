@@ -256,7 +256,7 @@ export async function startRace(raceId: string) {
   return { success: true }
 }
 
-export async function recordFinishTime(raceId: string, bibNumber: number) {
+export async function recordFinishTime(raceId: string, bibNumber: number, finishTime?: string) {
   const supabase = await createClient()
 
   console.log(`Attempting to record finish time - raceId: ${raceId}, bibNumber: ${bibNumber}`)
@@ -290,7 +290,7 @@ export async function recordFinishTime(raceId: string, bibNumber: number) {
 
   const finishTimeData = {
     race_participant_id: raceParticipant.id,
-    finish_time: new Date().toISOString(),
+    finish_time: finishTime || new Date().toISOString(),
   }
 
   console.log('Inserting finish time:', finishTimeData)
@@ -313,11 +313,11 @@ export async function recordFinishTime(raceId: string, bibNumber: number) {
   return { success: true }
 }
 
-export async function recordMultipleFinishTimes(raceId: string, bibNumbers: number[]) {
+export async function recordMultipleFinishTimes(raceId: string, bibNumbers: number[], finishTime?: string) {
   const supabase = await createClient()
 
-  // Use a single timestamp for all racers
-  const finishTime = new Date().toISOString()
+  // Use a single timestamp for all racers (or provided timestamp)
+  const timestamp = finishTime || new Date().toISOString()
 
   const results = []
   const errors = []
@@ -353,7 +353,7 @@ export async function recordMultipleFinishTimes(raceId: string, bibNumbers: numb
       .from('finish_times')
       .insert({
         race_participant_id: raceParticipant.id,
-        finish_time: finishTime,
+        finish_time: timestamp,
       })
 
     if (insertError) {
@@ -385,6 +385,23 @@ export async function updateFinishTime(finishTimeId: string, newFinishTime: stri
 
   if (error) {
     console.error('Error updating finish time:', error)
+    return { error: error.message }
+  }
+
+  revalidatePath('/')
+  return { success: true }
+}
+
+export async function deleteFinishTime(finishTimeId: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('finish_times')
+    .delete()
+    .eq('id', finishTimeId)
+
+  if (error) {
+    console.error('Error deleting finish time:', error)
     return { error: error.message }
   }
 
