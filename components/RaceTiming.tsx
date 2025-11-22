@@ -40,6 +40,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
   const refreshDataInBackground = async () => {
     const freshData = await getRaceParticipants(race.id)
     setLocalParticipants(freshData)
+    onUpdate() // Notify parent to refresh its data
   }
 
   // Only show participants with assigned bib numbers
