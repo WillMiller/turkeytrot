@@ -334,67 +334,118 @@ export default function RaceResultsDisplay() {
         </div>
       </div>
 
-      {/* Results Display */}
-      <div className="flex-1 overflow-hidden flex items-center justify-center p-4">
+      {/* Results Display - Spreadsheet Style */}
+      <div className="flex-1 overflow-hidden p-6">
         {currentCategory ? (
-          <div className="w-full max-w-7xl bg-white rounded-xl shadow-2xl p-6 max-h-full overflow-y-auto">
-            <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">
-              {currentCategory.category}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {currentCategory.results.map((rp, index) => {
-                const finishTime = rp.finish_time.adjusted_time || rp.finish_time.finish_time
-                const elapsed = formatElapsedTime(selectedRace.start_time!, finishTime)
-
-                return (
-                  <div
-                    key={rp.id}
-                    className={`flex items-center justify-between p-3 rounded-lg border ${
-                      index === 0
-                        ? 'bg-yellow-50 border-yellow-400 border-2'
-                        : index === 1
-                        ? 'bg-gray-50 border-gray-400 border-2'
-                        : index === 2
-                        ? 'bg-orange-50 border-orange-400 border-2'
-                        : 'bg-white border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div
-                        className={`text-xl font-bold flex-shrink-0 ${
-                          index === 0
-                            ? 'text-yellow-600'
-                            : index === 1
-                            ? 'text-gray-600'
-                            : index === 2
-                            ? 'text-orange-600'
-                            : 'text-gray-400'
-                        }`}
-                      >
-                        {index + 1}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-base font-bold text-gray-900 truncate">
-                          {[rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ') || 'Unnamed'}
-                        </div>
-                        <div className="text-xs text-gray-600">Bib #{rp.bib_number}</div>
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0 ml-2">
-                      <div className="text-lg font-mono font-bold text-blue-600">{elapsed}</div>
-                    </div>
-                  </div>
-                )
-              })}
+          <div className="h-full bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col">
+            {/* Category Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 text-center">
+              <h2 className="text-4xl font-bold">
+                {currentCategory.category}
+              </h2>
+              <p className="text-lg mt-2 opacity-90">
+                {currentCategory.results.length} {currentCategory.results.length === 1 ? 'Finisher' : 'Finishers'}
+              </p>
             </div>
-            {currentCategory.results.length === 0 && (
-              <p className="text-center text-gray-500 py-12">No finishers in this category yet</p>
-            )}
+
+            {/* Table */}
+            <div className="flex-1 overflow-auto">
+              <table className="w-full">
+                <thead className="bg-gray-100 sticky top-0 z-10 shadow-sm">
+                  <tr>
+                    <th className="text-left py-4 px-6 font-bold text-gray-700 text-lg border-b-2 border-gray-300">Place</th>
+                    <th className="text-left py-4 px-6 font-bold text-gray-700 text-lg border-b-2 border-gray-300">Name</th>
+                    <th className="text-center py-4 px-6 font-bold text-gray-700 text-lg border-b-2 border-gray-300">Bib</th>
+                    <th className="text-center py-4 px-6 font-bold text-gray-700 text-lg border-b-2 border-gray-300">Finish Time</th>
+                    <th className="text-right py-4 px-6 font-bold text-gray-700 text-lg border-b-2 border-gray-300">Race Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentCategory.results.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-12 text-gray-500 text-xl">
+                        No finishers in this category yet
+                      </td>
+                    </tr>
+                  ) : (
+                    currentCategory.results.map((rp, index) => {
+                      const finishTime = rp.finish_time.adjusted_time || rp.finish_time.finish_time
+                      const elapsed = formatElapsedTime(selectedRace.start_time!, finishTime)
+                      const clockTime = new Date(finishTime).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                      })
+
+                      return (
+                        <tr
+                          key={rp.id}
+                          className={`border-b border-gray-200 hover:bg-gray-50 ${
+                            index === 0
+                              ? 'bg-yellow-50'
+                              : index === 1
+                              ? 'bg-gray-50'
+                              : index === 2
+                              ? 'bg-orange-50'
+                              : ''
+                          }`}
+                        >
+                          <td className="py-4 px-6">
+                            <div className="flex items-center gap-3">
+                              <span
+                                className={`text-2xl font-bold ${
+                                  index === 0
+                                    ? 'text-yellow-600'
+                                    : index === 1
+                                    ? 'text-gray-600'
+                                    : index === 2
+                                    ? 'text-orange-600'
+                                    : 'text-gray-700'
+                                }`}
+                              >
+                                {index + 1}
+                              </span>
+                              {index < 3 && (
+                                <span className="text-xl">
+                                  {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <span className="text-xl font-semibold text-gray-900">
+                              {[rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ') || 'Unnamed'}
+                            </span>
+                          </td>
+                          <td className="py-4 px-6 text-center">
+                            <span className="inline-block bg-blue-100 text-blue-800 px-4 py-2 rounded-full font-bold text-lg">
+                              #{rp.bib_number}
+                            </span>
+                          </td>
+                          <td className="py-4 px-6 text-center">
+                            <span className="text-lg text-gray-700 font-mono">
+                              {clockTime}
+                            </span>
+                          </td>
+                          <td className="py-4 px-6 text-right">
+                            <span className="text-2xl font-mono font-bold text-blue-600">
+                              {elapsed}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
-          <div className="text-center text-gray-500">
-            <p className="text-2xl">No results to display yet</p>
-            <p className="mt-2">Waiting for finishers...</p>
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center text-gray-500">
+              <p className="text-2xl">No results to display yet</p>
+              <p className="mt-2">Waiting for finishers...</p>
+            </div>
           </div>
         )}
       </div>
