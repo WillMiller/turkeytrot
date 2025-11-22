@@ -9,7 +9,7 @@ import UserManagement from './UserManagement'
 type View = 'participants' | 'races' | 'users'
 
 export default function Dashboard() {
-  const [currentView, setCurrentView] = useState<View>('participants')
+  const [currentView, setCurrentView] = useState<View>('races')
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -25,16 +25,6 @@ export default function Dashboard() {
               </div>
               <div className="ml-6 flex space-x-8">
                 <button
-                  onClick={() => setCurrentView('participants')}
-                  className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
-                    currentView === 'participants'
-                      ? 'border-blue-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-                >
-                  Racers
-                </button>
-                <button
                   onClick={() => setCurrentView('races')}
                   className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
                     currentView === 'races'
@@ -43,6 +33,16 @@ export default function Dashboard() {
                   }`}
                 >
                   Races
+                </button>
+                <button
+                  onClick={() => setCurrentView('participants')}
+                  className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
+                    currentView === 'participants'
+                      ? 'border-blue-500 text-gray-900'
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+                >
+                  Racers
                 </button>
                 <button
                   onClick={() => setCurrentView('users')}

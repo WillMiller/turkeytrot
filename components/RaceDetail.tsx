@@ -15,7 +15,7 @@ interface RaceDetailProps {
 type Tab = 'participants' | 'timing' | 'results'
 
 export default function RaceDetail({ race, onBack }: RaceDetailProps) {
-  const [currentTab, setCurrentTab] = useState<Tab>('participants')
+  const [currentTab, setCurrentTab] = useState<Tab>('timing')
   const [raceParticipants, setRaceParticipants] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isStarted, setIsStarted] = useState(!!race.start_time)
@@ -84,16 +84,6 @@ export default function RaceDetail({ race, onBack }: RaceDetailProps) {
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           <button
-            onClick={() => setCurrentTab('participants')}
-            className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
-              currentTab === 'participants'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-            }`}
-          >
-            Racers ({raceParticipants.length})
-          </button>
-          <button
             onClick={() => setCurrentTab('timing')}
             className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
               currentTab === 'timing'
@@ -102,6 +92,16 @@ export default function RaceDetail({ race, onBack }: RaceDetailProps) {
             }`}
           >
             Timing
+          </button>
+          <button
+            onClick={() => setCurrentTab('participants')}
+            className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
+              currentTab === 'participants'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+            }`}
+          >
+            Racers ({raceParticipants.length})
           </button>
           <button
             onClick={() => setCurrentTab('results')}
