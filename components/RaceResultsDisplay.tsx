@@ -245,115 +245,123 @@ export default function RaceResultsDisplay() {
     <div className="h-[calc(100vh-8rem)] flex flex-col bg-gradient-to-br from-blue-50 to-orange-50">
       {/* Controls Bar */}
       <div className="bg-white shadow-sm border-b border-gray-200 p-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setSelectedRace(null)}
-              className="text-sm text-gray-600 hover:text-gray-900"
-            >
-              ← Change Race
-            </button>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">{selectedRace.name}</h2>
-              <p className="text-sm text-gray-600">
-                {new Date(selectedRace.race_date).toLocaleDateString()} • {finishedRacers.length} finishers
-              </p>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setSelectedRace(null)}
+                className="text-sm text-gray-600 hover:text-gray-900 whitespace-nowrap"
+              >
+                ← Change Race
+              </button>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">{selectedRace.name}</h2>
+                <p className="text-sm text-gray-600">
+                  {new Date(selectedRace.race_date).toLocaleDateString()} • {finishedRacers.length} finishers
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Category Type */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600 whitespace-nowrap">Category:</label>
+                <select
+                  value={categoryType}
+                  onChange={(e) => {
+                    setCategoryType(e.target.value as CategoryType)
+                    setCurrentIndex(0)
+                  }}
+                  className="rounded-md border border-gray-300 px-3 py-2 text-sm bg-white"
+                >
+                  <option value="overall">Overall</option>
+                  <option value="gender">By Gender</option>
+                  <option value="age">By Age</option>
+                  <option value="gender-age">By Gender & Age</option>
+                </select>
+              </div>
+
+              {/* Auto Scroll Toggle */}
+              <button
+                onClick={() => setAutoScroll(!autoScroll)}
+                className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap ${
+                  autoScroll
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {autoScroll ? '⏸ Pause' : '▶ Auto Scroll'}
+              </button>
+
+              {/* Speed Control */}
+              {autoScroll && (
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-600 whitespace-nowrap">Speed:</label>
+                  <select
+                    value={scrollSpeed}
+                    onChange={(e) => setScrollSpeed(Number(e.target.value))}
+                    className="rounded-md border border-gray-300 px-3 py-2 text-sm bg-white"
+                  >
+                    <option value={2000}>Fast (2s)</option>
+                    <option value={3000}>Medium (3s)</option>
+                    <option value={5000}>Slow (5s)</option>
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Category Type */}
-            <select
-              value={categoryType}
-              onChange={(e) => {
-                setCategoryType(e.target.value as CategoryType)
-                setCurrentIndex(0)
-              }}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value="overall">Overall</option>
-              <option value="gender">By Gender</option>
-              <option value="age">By Age</option>
-              <option value="gender-age">By Gender & Age</option>
-            </select>
-
-            {/* Auto Scroll Toggle */}
-            <button
-              onClick={() => setAutoScroll(!autoScroll)}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                autoScroll
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              {autoScroll ? '⏸ Pause' : '▶ Auto Scroll'}
-            </button>
-
-            {/* Speed Control */}
-            {autoScroll && (
-              <select
-                value={scrollSpeed}
-                onChange={(e) => setScrollSpeed(Number(e.target.value))}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          {/* Manual Navigation */}
+          {!autoScroll && categorizedResults.length > 1 && (
+            <div className="flex items-center justify-center gap-4 pt-3 border-t border-gray-200">
+              <button
+                onClick={() => setCurrentIndex((prev) => (prev - 1 + categorizedResults.length) % categorizedResults.length)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                <option value={2000}>Fast (2s)</option>
-                <option value={3000}>Medium (3s)</option>
-                <option value={5000}>Slow (5s)</option>
-              </select>
-            )}
-          </div>
+                ← Previous
+              </button>
+              <span className="text-sm text-gray-600">
+                {currentIndex + 1} of {categorizedResults.length} categories
+              </span>
+              <button
+                onClick={() => setCurrentIndex((prev) => (prev + 1) % categorizedResults.length)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Next →
+              </button>
+            </div>
+          )}
         </div>
-
-        {/* Manual Navigation */}
-        {!autoScroll && categorizedResults.length > 1 && (
-          <div className="max-w-7xl mx-auto mt-3 flex items-center justify-center gap-4">
-            <button
-              onClick={() => setCurrentIndex((prev) => (prev - 1 + categorizedResults.length) % categorizedResults.length)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              ← Previous
-            </button>
-            <span className="text-sm text-gray-600">
-              {currentIndex + 1} of {categorizedResults.length} categories
-            </span>
-            <button
-              onClick={() => setCurrentIndex((prev) => (prev + 1) % categorizedResults.length)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Next →
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Results Display */}
-      <div className="flex-1 overflow-hidden flex items-center justify-center p-8">
+      <div className="flex-1 overflow-hidden flex items-center justify-center p-4">
         {currentCategory ? (
-          <div className="w-full max-w-6xl bg-white rounded-xl shadow-2xl p-8 max-h-full overflow-y-auto">
-            <h2 className="text-4xl font-bold text-center text-gray-900 mb-8">
+          <div className="w-full max-w-7xl bg-white rounded-xl shadow-2xl p-6 max-h-full overflow-y-auto">
+            <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">
               {currentCategory.category}
             </h2>
-            <div className="space-y-4">
-              {currentCategory.results.slice(0, 10).map((rp, index) => {
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {currentCategory.results.map((rp, index) => {
                 const finishTime = rp.finish_time.adjusted_time || rp.finish_time.finish_time
                 const elapsed = formatElapsedTime(selectedRace.start_time!, finishTime)
 
                 return (
                   <div
                     key={rp.id}
-                    className={`flex items-center justify-between p-6 rounded-lg border-2 ${
+                    className={`flex items-center justify-between p-3 rounded-lg border ${
                       index === 0
-                        ? 'bg-yellow-50 border-yellow-400'
+                        ? 'bg-yellow-50 border-yellow-400 border-2'
                         : index === 1
-                        ? 'bg-gray-50 border-gray-400'
+                        ? 'bg-gray-50 border-gray-400 border-2'
                         : index === 2
-                        ? 'bg-orange-50 border-orange-400'
+                        ? 'bg-orange-50 border-orange-400 border-2'
                         : 'bg-white border-gray-200'
                     }`}
                   >
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div
-                        className={`text-4xl font-bold ${
+                        className={`text-xl font-bold flex-shrink-0 ${
                           index === 0
                             ? 'text-yellow-600'
                             : index === 1
@@ -363,27 +371,22 @@ export default function RaceResultsDisplay() {
                             : 'text-gray-400'
                         }`}
                       >
-                        #{index + 1}
+                        {index + 1}
                       </div>
-                      <div>
-                        <div className="text-2xl font-bold text-gray-900">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-base font-bold text-gray-900 truncate">
                           {[rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ') || 'Unnamed'}
                         </div>
-                        <div className="text-sm text-gray-600">Bib #{rp.bib_number}</div>
+                        <div className="text-xs text-gray-600">Bib #{rp.bib_number}</div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-3xl font-mono font-bold text-blue-600">{elapsed}</div>
+                    <div className="text-right flex-shrink-0 ml-2">
+                      <div className="text-lg font-mono font-bold text-blue-600">{elapsed}</div>
                     </div>
                   </div>
                 )
               })}
             </div>
-            {currentCategory.results.length > 10 && (
-              <p className="text-center text-gray-500 mt-6">
-                Showing top 10 of {currentCategory.results.length} finishers
-              </p>
-            )}
             {currentCategory.results.length === 0 && (
               <p className="text-center text-gray-500 py-12">No finishers in this category yet</p>
             )}

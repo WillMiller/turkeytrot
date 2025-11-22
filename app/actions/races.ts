@@ -45,11 +45,11 @@ export async function createRace(formData: FormData) {
       const participantIds = JSON.parse(participantsJson) as string[]
 
       if (participantIds.length > 0) {
-        // Create race_participants entries with auto-incrementing bib numbers
-        const raceParticipants = participantIds.map((participantId, index) => ({
+        // Create race_participants entries without bib numbers (assigned on race day)
+        const raceParticipants = participantIds.map((participantId) => ({
           race_id: newRace.id,
           participant_id: participantId,
-          bib_number: index + 1,
+          bib_number: null,
         }))
 
         const { error: participantsError } = await supabase

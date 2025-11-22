@@ -42,8 +42,11 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
     setLocalParticipants(freshData)
   }
 
-  const finishedCount = localParticipants.filter(rp => rp.finish_time).length
-  const stillRacing = localParticipants
+  // Only show participants with assigned bib numbers
+  const participantsWithBibs = localParticipants.filter(rp => rp.bib_number !== null && rp.bib_number !== undefined)
+
+  const finishedCount = participantsWithBibs.filter(rp => rp.finish_time).length
+  const stillRacing = participantsWithBibs
     .filter(rp => !rp.finish_time)
     .filter(rp => {
       if (!searchStillRacing) return true
@@ -56,7 +59,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
     })
     .sort((a, b) => (a.bib_number || 0) - (b.bib_number || 0))
 
-  const finishedRacers = localParticipants
+  const finishedRacers = participantsWithBibs
     .filter(rp => rp.finish_time)
     .filter(rp => {
       if (!searchFinished) return true
@@ -357,7 +360,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
 
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">Total:</span>
-                <span className="font-bold text-gray-900">{localParticipants.length}</span>
+                <span className="font-bold text-gray-900">{participantsWithBibs.length}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">Finished:</span>
