@@ -66,7 +66,7 @@ export default function RaceResultsDisplay() {
       }, scrollSpeed)
       return () => clearInterval(interval)
     }
-  }, [autoScroll, scrollSpeed])
+  }, [autoScroll, scrollSpeed, categorizedResults.length])
 
   const calculateAge = (dateOfBirth: string, raceDate: string) => {
     const dob = new Date(dateOfBirth)

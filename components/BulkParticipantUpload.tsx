@@ -155,7 +155,7 @@ John,Doe,john@example.com,Male
 Jane,Smith,jane@example.com,Female`}
               </pre>
               <p className="text-sm text-blue-700 mt-2">
-                <strong>Note:</strong> No emails will be sent automatically. You'll need to share login credentials separately.
+                <strong>Note:</strong> No emails will be sent automatically. You&apos;ll need to share login credentials separately.
               </p>
             </div>
 
