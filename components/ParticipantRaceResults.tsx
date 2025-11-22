@@ -179,13 +179,13 @@ export default function ParticipantRaceResults({ races }: ParticipantRaceResults
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name or bib number..."
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
           <select
             value={categoryType}
             onChange={(e) => setCategoryType(e.target.value as CategoryType)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm bg-white text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="overall">Overall</option>
             <option value="gender">By Gender</option>

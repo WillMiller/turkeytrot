@@ -441,7 +441,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
               value={searchStillRacing}
               onChange={(e) => setSearchStillRacing(e.target.value)}
               placeholder="Search bib or name..."
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -486,7 +486,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
               value={searchFinished}
               onChange={(e) => setSearchFinished(e.target.value)}
               placeholder="Search bib or name..."
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
           <div className="flex-1 overflow-y-auto">

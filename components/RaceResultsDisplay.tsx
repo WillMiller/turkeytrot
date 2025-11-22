@@ -268,7 +268,7 @@ export default function RaceResultsDisplay() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by name or bib number..."
-                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
 
@@ -281,7 +281,7 @@ export default function RaceResultsDisplay() {
                   setCategoryType(e.target.value as CategoryType)
                   setCurrentIndex(0)
                 }}
-                className="rounded-md border border-gray-300 px-2 py-1.5 text-sm bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="rounded-md border border-gray-300 px-2 py-1.5 text-sm bg-white text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option value="overall">Overall</option>
                 <option value="gender">By Gender</option>
@@ -294,7 +294,7 @@ export default function RaceResultsDisplay() {
                 <select
                   value={scrollSpeed}
                   onChange={(e) => setScrollSpeed(Number(e.target.value))}
-                  className="rounded-md border border-gray-300 px-2 py-1.5 text-sm bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="rounded-md border border-gray-300 px-2 py-1.5 text-sm bg-white text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <option value={2000}>Fast</option>
                   <option value={3000}>Medium</option>
