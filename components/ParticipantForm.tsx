@@ -43,7 +43,7 @@ export default function ParticipantForm({ participant, onClose }: ParticipantFor
           <form onSubmit={handleSubmit}>
             <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
               <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4" id="modal-title">
-                {participant ? 'Edit Participant' : 'Add Participant'}
+                {participant ? 'Edit Racer' : 'Add Racer'}
               </h3>
 
               {error && (
@@ -62,7 +62,7 @@ export default function ParticipantForm({ participant, onClose }: ParticipantFor
                     name="first_name"
                     id="first_name"
                     defaultValue={participant?.first_name || ''}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                   />
                 </div>
 
@@ -75,7 +75,7 @@ export default function ParticipantForm({ participant, onClose }: ParticipantFor
                     name="last_name"
                     id="last_name"
                     defaultValue={participant?.last_name || ''}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                   />
                 </div>
 
@@ -87,7 +87,7 @@ export default function ParticipantForm({ participant, onClose }: ParticipantFor
                     name="gender"
                     id="gender"
                     defaultValue={participant?.gender || ''}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                   >
                     <option value="">Select...</option>
                     <option value="Male">Male</option>
@@ -105,7 +105,7 @@ export default function ParticipantForm({ participant, onClose }: ParticipantFor
                     name="date_of_birth"
                     id="date_of_birth"
                     defaultValue={participant?.date_of_birth || ''}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                   />
                 </div>
 
@@ -118,7 +118,7 @@ export default function ParticipantForm({ participant, onClose }: ParticipantFor
                     name="email"
                     id="email"
                     defaultValue={participant?.email || ''}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                   />
                 </div>
 
@@ -131,7 +131,7 @@ export default function ParticipantForm({ participant, onClose }: ParticipantFor
                     name="phone"
                     id="phone"
                     defaultValue={participant?.phone || ''}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                   />
                 </div>
 
@@ -144,7 +144,7 @@ export default function ParticipantForm({ participant, onClose }: ParticipantFor
                     name="emergency_contact_name"
                     id="emergency_contact_name"
                     defaultValue={participant?.emergency_contact_name || ''}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                   />
                 </div>
 
@@ -157,7 +157,7 @@ export default function ParticipantForm({ participant, onClose }: ParticipantFor
                     name="emergency_contact_phone"
                     id="emergency_contact_phone"
                     defaultValue={participant?.emergency_contact_phone || ''}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                   />
                 </div>
               </div>

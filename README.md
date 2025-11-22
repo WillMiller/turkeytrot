@@ -1,4 +1,4 @@
-# Sausalito Free Turkey Trott - Race Timing System
+# Sausalito Turkey Trot - Race Timing System
 
 A comprehensive web application for managing race registration, timing, and results for running events.
 

@@ -54,12 +54,12 @@ export default function ParticipantsView() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Participants</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Racers</h2>
         <button
           onClick={handleCreate}
           className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
-          Add Participant
+          Add Racer
         </button>
       </div>
 
@@ -74,7 +74,7 @@ export default function ParticipantsView() {
         <div className="text-center py-8">Loading...</div>
       ) : participants.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          No participants yet. Click &quot;Add Participant&quot; to get started.
+          No racers yet. Click &quot;Add Racer&quot; to get started.
         </div>
       ) : (
         <div className="overflow-hidden bg-white shadow sm:rounded-md">

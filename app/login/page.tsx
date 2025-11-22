@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { login, signup } from '@/app/actions/auth'
+import { login } from '@/app/actions/auth'
 
 export default function LoginPage() {
-  const [isSignup, setIsSignup] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -12,7 +11,7 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    const result = isSignup ? await signup(formData) : await login(formData)
+    const result = await login(formData)
 
     if (result?.error) {
       setError(result.error)
@@ -25,10 +24,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-md">
         <div>
           <h2 className="text-center text-3xl font-bold text-gray-900">
-            Sausalito Free Turkey Trott
+            Admin Portal
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            {isSignup ? 'Create your account' : 'Sign in to your account'}
+            Sign in with your admin credentials
           </p>
         </div>
 
@@ -49,7 +48,7 @@ export default function LoginPage() {
                 name="email"
                 type="email"
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
               />
             </div>
 
@@ -62,7 +61,7 @@ export default function LoginPage() {
                 name="password"
                 type="password"
                 required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
               />
             </div>
           </div>
@@ -73,23 +72,17 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
             >
-              {loading ? 'Please wait...' : (isSignup ? 'Sign up' : 'Sign in')}
+              {loading ? 'Please wait...' : 'Sign in'}
             </button>
           </div>
 
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignup(!isSignup)
-                setError(null)
-              }}
-              className="text-sm text-blue-600 hover:text-blue-500"
-            >
-              {isSignup
-                ? 'Already have an account? Sign in'
-                : "Don't have an account? Sign up"}
-            </button>
+          <div className="text-center space-y-2">
+            <a href="/participant/login" className="block text-sm text-gray-600 hover:text-gray-500">
+              Racer login
+            </a>
+            <a href="/reset-password" className="block text-sm text-gray-600 hover:text-gray-500">
+              Forgot your password?
+            </a>
           </div>
         </form>
       </div>

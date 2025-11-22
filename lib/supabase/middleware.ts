@@ -2,6 +2,18 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
+  // Allow public access to registration pages, home page, claim account, password reset, and API routes
+  const publicPaths = ['/home', '/register', '/participant/login', '/participant/dashboard', '/claim-account', '/reset-password', '/api/races']
+  const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
+
+  if (isPublicPath) {
+    return NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    })
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,

@@ -27,13 +27,43 @@ export async function createRace(formData: FormData) {
     race_date: formData.get('race_date') as string,
   }
 
-  const { error } = await supabase
+  const { data: newRace, error } = await supabase
     .from('races')
     .insert(race)
+    .select()
+    .single()
 
   if (error) {
     console.error('Error creating race:', error)
     return { error: error.message }
+  }
+
+  // Add participants if any were selected
+  const participantsJson = formData.get('participants') as string
+  if (participantsJson) {
+    try {
+      const participantIds = JSON.parse(participantsJson) as string[]
+
+      if (participantIds.length > 0) {
+        // Create race_participants entries with auto-incrementing bib numbers
+        const raceParticipants = participantIds.map((participantId, index) => ({
+          race_id: newRace.id,
+          participant_id: participantId,
+          bib_number: index + 1,
+        }))
+
+        const { error: participantsError } = await supabase
+          .from('race_participants')
+          .insert(raceParticipants)
+
+        if (participantsError) {
+          console.error('Error adding participants to race:', participantsError)
+          // Don't fail the whole operation, just log the error
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing participants:', e)
+    }
   }
 
   revalidatePath('/')
@@ -87,7 +117,7 @@ export async function getRaceParticipants(raceId: string) {
     .select(`
       *,
       participant:participants(*),
-      finish_time:finish_times(*)
+      finish_times(*)
     `)
     .eq('race_id', raceId)
     .order('bib_number', { ascending: true })
@@ -97,10 +127,25 @@ export async function getRaceParticipants(raceId: string) {
     return []
   }
 
-  return data.map(item => ({
-    ...item,
-    finish_time: Array.isArray(item.finish_time) && item.finish_time.length > 0 ? item.finish_time[0] : undefined
-  }))
+  const processedData = data.map(item => {
+    // finish_times can be either an object (when there's one result) or an array (when multiple) or null
+    let finish_time = null
+    if (item.finish_times) {
+      if (Array.isArray(item.finish_times)) {
+        finish_time = item.finish_times.length > 0 ? item.finish_times[0] : null
+      } else {
+        finish_time = item.finish_times
+      }
+    }
+    return {
+      ...item,
+      finish_time
+    }
+  })
+
+  console.log('Race participants data:', JSON.stringify(processedData, null, 2))
+
+  return processedData
 }
 
 export async function addParticipantToRace(raceId: string, participantId: string, bibNumber: number) {
@@ -214,6 +259,8 @@ export async function startRace(raceId: string) {
 export async function recordFinishTime(raceId: string, bibNumber: number) {
   const supabase = await createClient()
 
+  console.log(`Attempting to record finish time - raceId: ${raceId}, bibNumber: ${bibNumber}`)
+
   // Find the race participant by bib number
   const { data: raceParticipant, error: findError } = await supabase
     .from('race_participants')
@@ -222,35 +269,110 @@ export async function recordFinishTime(raceId: string, bibNumber: number) {
     .eq('bib_number', bibNumber)
     .single()
 
+  console.log('Found race participant:', raceParticipant, 'Error:', findError)
+
   if (findError || !raceParticipant) {
     return { error: `Bib number ${bibNumber} not found in this race` }
   }
 
   // Check if finish time already exists
-  const { data: existingFinish } = await supabase
+  const { data: existingFinish, error: checkError } = await supabase
     .from('finish_times')
     .select('id')
     .eq('race_participant_id', raceParticipant.id)
     .single()
 
+  console.log('Existing finish check:', existingFinish, 'Error:', checkError)
+
   if (existingFinish) {
     return { error: `Bib number ${bibNumber} has already finished` }
   }
 
-  const { error } = await supabase
+  const finishTimeData = {
+    race_participant_id: raceParticipant.id,
+    finish_time: new Date().toISOString(),
+  }
+
+  console.log('Inserting finish time:', finishTimeData)
+
+  const { data: insertedData, error } = await supabase
     .from('finish_times')
-    .insert({
-      race_participant_id: raceParticipant.id,
-      finish_time: new Date().toISOString(),
-    })
+    .insert(finishTimeData)
+    .select()
+
+  console.log('Insert result:', insertedData, 'Error:', error)
 
   if (error) {
     console.error('Error recording finish time:', error)
     return { error: error.message }
   }
 
-  revalidatePath('/')
+  console.log(`Successfully recorded finish time for bib ${bibNumber}, race_participant_id: ${raceParticipant.id}`)
+
+  revalidatePath('/', 'layout')
   return { success: true }
+}
+
+export async function recordMultipleFinishTimes(raceId: string, bibNumbers: number[]) {
+  const supabase = await createClient()
+
+  // Use a single timestamp for all racers
+  const finishTime = new Date().toISOString()
+
+  const results = []
+  const errors = []
+
+  for (const bibNumber of bibNumbers) {
+    // Find the race participant by bib number
+    const { data: raceParticipant, error: findError } = await supabase
+      .from('race_participants')
+      .select('id')
+      .eq('race_id', raceId)
+      .eq('bib_number', bibNumber)
+      .single()
+
+    if (findError || !raceParticipant) {
+      errors.push({ bibNumber, error: `Bib #${bibNumber} not found` })
+      continue
+    }
+
+    // Check if finish time already exists
+    const { data: existingFinish } = await supabase
+      .from('finish_times')
+      .select('id')
+      .eq('race_participant_id', raceParticipant.id)
+      .single()
+
+    if (existingFinish) {
+      errors.push({ bibNumber, error: `Bib #${bibNumber} already finished` })
+      continue
+    }
+
+    // Insert finish time
+    const { error: insertError } = await supabase
+      .from('finish_times')
+      .insert({
+        race_participant_id: raceParticipant.id,
+        finish_time: finishTime,
+      })
+
+    if (insertError) {
+      errors.push({ bibNumber, error: `Bib #${bibNumber} failed to record` })
+    } else {
+      results.push({ bibNumber, success: true })
+    }
+  }
+
+  revalidatePath('/', 'layout')
+
+  return {
+    success: results.length > 0,
+    results,
+    errors,
+    message: results.length > 0
+      ? `Recorded ${results.length} finish time${results.length > 1 ? 's' : ''}`
+      : 'No finish times recorded'
+  }
 }
 
 export async function updateFinishTime(finishTimeId: string, newFinishTime: string) {

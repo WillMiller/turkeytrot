@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { recordFinishTime } from '@/app/actions/races'
+import { recordFinishTime, recordMultipleFinishTimes } from '@/app/actions/races'
 import type { Race } from '@/lib/types/database'
 
 interface RaceTimingProps {
@@ -14,19 +14,22 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
   const [bibInput, setBibInput] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [processing, setProcessing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const finishedCount = raceParticipants.filter(rp => rp.finish_time).length
 
   useEffect(() => {
+    console.log('RaceTiming - raceParticipants:', raceParticipants)
+    console.log('RaceTiming - finishedCount:', finishedCount)
     // Auto-focus the input on mount and after each successful entry
     inputRef.current?.focus()
-  }, [finishedCount])
+  }, [finishedCount, raceParticipants])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!bibInput.trim()) {
+    if (!bibInput.trim() || processing) {
       return
     }
 
@@ -37,31 +40,51 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
 
     setError(null)
     setSuccess(null)
+    setProcessing(true)
 
-    const bibNumber = parseInt(bibInput.trim())
+    // Parse space-separated bib numbers
+    const bibNumbersInput = bibInput.trim().split(/\s+/)
+    const bibNumbers = bibNumbersInput.map(b => parseInt(b)).filter(b => !isNaN(b))
 
-    if (isNaN(bibNumber)) {
-      setError('Invalid bib number')
+    if (bibNumbers.length === 0) {
+      setError('Invalid bib number(s)')
       setBibInput('')
+      setProcessing(false)
       inputRef.current?.focus()
       return
     }
 
-    const result = await recordFinishTime(race.id, bibNumber)
+    // Handle single or multiple bib numbers
+    if (bibNumbers.length === 1) {
+      const result = await recordFinishTime(race.id, bibNumbers[0])
 
-    if (result.error) {
-      setError(result.error)
-      setBibInput('')
-      inputRef.current?.focus()
+      if (result?.error) {
+        setError(result.error)
+      } else {
+        setSuccess(`Bib #${bibNumbers[0]} recorded!`)
+        // Update immediately without waiting
+        setTimeout(() => onUpdate(), 0)
+      }
     } else {
-      setSuccess(`Bib #${bibNumber} recorded!`)
-      setBibInput('')
-      onUpdate()
-      inputRef.current?.focus()
+      const result = await recordMultipleFinishTimes(race.id, bibNumbers)
 
-      // Clear success message after 2 seconds
-      setTimeout(() => setSuccess(null), 2000)
+      if (result.errors && result.errors.length > 0) {
+        setError(result.errors.map(e => e.error).join(', '))
+      }
+
+      if (result.success) {
+        setSuccess(result.message || `Recorded ${bibNumbers.length} bibs!`)
+        // Update immediately without waiting
+        setTimeout(() => onUpdate(), 0)
+      }
     }
+
+    setBibInput('')
+    setProcessing(false)
+    inputRef.current?.focus()
+
+    // Clear success message after 2 seconds
+    setTimeout(() => setSuccess(null), 2000)
   }
 
   const formatElapsedTime = (startTime: string, finishTime: string) => {
@@ -98,7 +121,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             <div className="rounded-lg bg-blue-50 p-4">
-              <p className="text-sm text-blue-600">Total Participants</p>
+              <p className="text-sm text-blue-600">Total Racers</p>
               <p className="text-2xl font-bold text-blue-900">{raceParticipants.length}</p>
             </div>
             <div className="rounded-lg bg-green-50 p-4">
@@ -130,7 +153,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
 
               <div>
                 <label htmlFor="bib_input" className="block text-sm font-medium text-gray-700 mb-2">
-                  Enter Bib Number and Press Enter
+                  Enter Bib Number(s) and Press Enter
                 </label>
                 <input
                   ref={inputRef}
@@ -138,12 +161,13 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
                   id="bib_input"
                   value={bibInput}
                   onChange={(e) => setBibInput(e.target.value)}
-                  className="block w-full rounded-md border border-gray-300 px-4 py-3 text-2xl text-center font-bold shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                  placeholder="123"
+                  disabled={processing}
+                  className="block w-full rounded-md border border-gray-300 px-4 py-3 text-2xl text-center font-bold text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 disabled:opacity-50"
+                  placeholder="123 or 123 124 125"
                   autoFocus
                 />
                 <p className="mt-2 text-sm text-gray-500">
-                  Type the bib number and press Enter to record the finish time. The field will clear automatically for the next entry.
+                  Enter one bib number (e.g., <strong>123</strong>) or multiple space-separated bibs (e.g., <strong>123 124 125</strong>) for racers finishing at the same time. Press Enter to record.
                 </p>
               </div>
             </form>

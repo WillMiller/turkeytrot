@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { signout } from '@/app/actions/auth'
 import ParticipantsView from './ParticipantsView'
 import RacesView from './RacesView'
+import UserManagement from './UserManagement'
 
-type View = 'participants' | 'races'
+type View = 'participants' | 'races' | 'users'
 
 export default function Dashboard() {
   const [currentView, setCurrentView] = useState<View>('participants')
@@ -19,7 +20,7 @@ export default function Dashboard() {
             <div className="flex">
               <div className="flex flex-shrink-0 items-center">
                 <h1 className="text-xl font-bold text-gray-900">
-                  Sausalito Free Turkey Trott
+                  Sausalito Turkey Trot
                 </h1>
               </div>
               <div className="ml-6 flex space-x-8">
@@ -31,7 +32,7 @@ export default function Dashboard() {
                       : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                   }`}
                 >
-                  Participants
+                  Racers
                 </button>
                 <button
                   onClick={() => setCurrentView('races')}
@@ -42,6 +43,16 @@ export default function Dashboard() {
                   }`}
                 >
                   Races
+                </button>
+                <button
+                  onClick={() => setCurrentView('users')}
+                  className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
+                    currentView === 'users'
+                      ? 'border-blue-500 text-gray-900'
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+                >
+                  Users
                 </button>
               </div>
             </div>
@@ -61,6 +72,7 @@ export default function Dashboard() {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {currentView === 'participants' && <ParticipantsView />}
         {currentView === 'races' && <RacesView />}
+        {currentView === 'users' && <UserManagement />}
       </main>
     </div>
   )

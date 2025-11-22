@@ -82,18 +82,18 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium text-gray-900">Race Participants</h3>
+        <h3 className="text-lg font-medium text-gray-900">Race Racers</h3>
         <button
           onClick={() => setShowAddModal(true)}
           className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
-          Add Participant
+          Add Racer
         </button>
       </div>
 
       {raceParticipants.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          No participants added yet. Click &quot;Add Participant&quot; to get started.
+          No racers added yet. Click &quot;Add Racer&quot; to get started.
         </div>
       ) : (
         <div className="overflow-hidden bg-white shadow sm:rounded-md">
@@ -115,7 +115,7 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
                             setEditingBib(null)
                           }
                         }}
-                        className="w-20 rounded-md border border-gray-300 px-2 py-1 text-center text-lg font-bold"
+                        className="w-20 rounded-md border border-gray-300 px-2 py-1 text-center text-lg font-bold text-gray-900"
                         autoFocus
                       />
                     ) : (
@@ -160,7 +160,7 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
             <div className="inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:align-middle">
               <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                 <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4" id="modal-title">
-                  Add Participant to Race
+                  Add Racer to Race
                 </h3>
 
                 {error && (
@@ -172,13 +172,13 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="participant" className="block text-sm font-medium text-gray-700">
-                      Select Participant
+                      Select Racer
                     </label>
                     <select
                       id="participant"
                       value={selectedParticipant}
                       onChange={(e) => setSelectedParticipant(e.target.value)}
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                     >
                       <option value="">Choose...</option>
                       {availableParticipants.map((p) => (
@@ -198,7 +198,7 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
                       id="bib_number"
                       value={bibNumber}
                       onChange={(e) => setBibNumber(e.target.value)}
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                     />
                   </div>
                 </div>

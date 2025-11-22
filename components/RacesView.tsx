@@ -41,7 +41,7 @@ export default function RacesView() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this race? This will also delete all associated participants and finish times.')) {
+    if (!confirm('Are you sure you want to delete this race? This will also delete all associated racers and finish times.')) {
       return
     }
 

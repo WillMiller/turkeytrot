@@ -28,6 +28,7 @@ export default function RaceDetail({ race, onBack }: RaceDetailProps) {
   const loadRaceParticipants = async () => {
     setLoading(true)
     const data = await getRaceParticipants(race.id)
+    console.log('Loaded race participants:', data)
     setRaceParticipants(data)
     setLoading(false)
   }
@@ -90,7 +91,7 @@ export default function RaceDetail({ race, onBack }: RaceDetailProps) {
                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
             }`}
           >
-            Participants ({raceParticipants.length})
+            Racers ({raceParticipants.length})
           </button>
           <button
             onClick={() => setCurrentTab('timing')}
