@@ -1,39 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { registerUser } from '@/app/actions/public'
-import type { Race } from '@/lib/types/database'
 
 export default function PublicRegistrationPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [races, setRaces] = useState<Race[]>([])
-  const [loadingRaces, setLoadingRaces] = useState(true)
-  const [selectedRaces, setSelectedRaces] = useState<string[]>([])
-
-  // Load available upcoming races
-  useEffect(() => {
-    fetch('/api/races')
-      .then(res => res.json())
-      .then(data => {
-        const upcomingRaces = (data.races || []).filter((race: Race) =>
-          new Date(race.race_date) >= new Date()
-        )
-        setRaces(upcomingRaces)
-        setLoadingRaces(false)
-      })
-      .catch(() => {
-        setLoadingRaces(false)
-      })
-  }, [])
-
-  const toggleRace = (raceId: string) => {
-    setSelectedRaces(prev =>
-      prev.includes(raceId)
-        ? prev.filter(id => id !== raceId)
-        : [...prev, raceId]
-    )
-  }
 
   const handleSubmit = async (formData: FormData) => {
     setLoading(true)
@@ -49,9 +21,6 @@ export default function PublicRegistrationPage() {
       return
     }
 
-    // Add selected races to formData
-    formData.set('selected_races', JSON.stringify(selectedRaces))
-
     const result = await registerUser(formData)
 
     if (result?.error) {
@@ -66,15 +35,15 @@ export default function PublicRegistrationPage() {
       <div className="w-full max-w-2xl rounded-lg bg-white p-8 shadow-md">
         <div className="mb-6">
           <h2 className="text-center text-3xl font-bold text-gray-900">
-            Sausalito Turkey Trot
+            Create Your Account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Register for the race
+            Join the Sausalito Turkey Trot
           </p>
           <p className="mt-3 text-center text-sm text-gray-700">
             Already have an account?{' '}
             <a href="/participant/login" className="font-medium text-blue-600 hover:text-blue-500">
-              Sign in here to register
+              Sign in here
             </a>
           </p>
         </div>
@@ -229,39 +198,11 @@ export default function PublicRegistrationPage() {
             </div>
           </div>
 
-          {!loadingRaces && races.length > 0 && (
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Register for Upcoming Races (Optional)
-              </h3>
-              <p className="text-sm text-gray-600 mb-3">
-                Select which races you&apos;d like to register for. Bib numbers will be assigned on race day.
-              </p>
-              <div className="space-y-2">
-                {races.map(race => (
-                  <label
-                    key={race.id}
-                    className="flex items-center p-3 hover:bg-gray-50 cursor-pointer rounded-md border border-gray-200"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedRaces.includes(race.id)}
-                      onChange={() => toggleRace(race.id)}
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="ml-3 text-sm text-gray-900">
-                      {race.name} - {new Date(race.race_date).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="border-t border-gray-200 pt-6">
+            <p className="text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-md p-4">
+              After creating your account, you&apos;ll be able to register for races from your dashboard.
+            </p>
+          </div>
 
           <div>
             <button

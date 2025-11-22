@@ -60,11 +60,11 @@ export async function registerUser(formData: FormData) {
       const selectedRaces = JSON.parse(selectedRacesJson) as string[]
 
       if (selectedRaces.length > 0) {
-        // Create race_participants entries WITHOUT bib numbers (set to 0 or null)
+        // Create race_participants entries WITHOUT bib numbers (set to null)
         const raceParticipants = selectedRaces.map((raceId) => ({
           race_id: raceId,
           participant_id: authData.user!.id,
-          bib_number: 0, // Temporary bib number, will be assigned on race day
+          bib_number: null, // Will be assigned by admin before race day
         }))
 
         await supabase
@@ -126,11 +126,11 @@ export async function updateEmergencyContactAndRegisterForRaces(formData: FormDa
       const selectedRaces = JSON.parse(selectedRacesJson) as string[]
 
       if (selectedRaces.length > 0) {
-        // Create race_participants entries WITHOUT bib numbers (set to 0)
+        // Create race_participants entries WITHOUT bib numbers (set to null)
         const raceParticipants = selectedRaces.map((raceId) => ({
           race_id: raceId,
           participant_id: user.id,
-          bib_number: 0, // Temporary bib number, will be assigned on race day
+          bib_number: null, // Will be assigned by admin before race day
         }))
 
         const { error: raceError } = await supabase
