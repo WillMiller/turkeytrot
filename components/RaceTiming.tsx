@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { recordFinishTime, recordMultipleFinishTimes, updateFinishTime, deleteFinishTime } from '@/app/actions/races'
+import { recordFinishTime, recordMultipleFinishTimes, updateFinishTime, deleteFinishTime, getRaceParticipants } from '@/app/actions/races'
 import type { Race } from '@/lib/types/database'
 
 interface RaceTimingProps {
@@ -28,10 +28,22 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
   const [searchStillRacing, setSearchStillRacing] = useState('')
   const [searchFinished, setSearchFinished] = useState('')
   const [raceElapsed, setRaceElapsed] = useState('')
+  const [localParticipants, setLocalParticipants] = useState(raceParticipants)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const finishedCount = raceParticipants.filter(rp => rp.finish_time).length
-  const stillRacing = raceParticipants
+  // Sync local participants with prop changes (only when prop actually changes)
+  useEffect(() => {
+    setLocalParticipants(raceParticipants)
+  }, [raceParticipants])
+
+  // Background refresh without flickering
+  const refreshDataInBackground = async () => {
+    const freshData = await getRaceParticipants(race.id)
+    setLocalParticipants(freshData)
+  }
+
+  const finishedCount = localParticipants.filter(rp => rp.finish_time).length
+  const stillRacing = localParticipants
     .filter(rp => !rp.finish_time)
     .filter(rp => {
       if (!searchStillRacing) return true
@@ -44,7 +56,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
     })
     .sort((a, b) => (a.bib_number || 0) - (b.bib_number || 0))
 
-  const finishedRacers = raceParticipants
+  const finishedRacers = localParticipants
     .filter(rp => rp.finish_time)
     .filter(rp => {
       if (!searchFinished) return true
@@ -58,7 +70,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
     .sort((a, b) => {
       const timeA = new Date(a.finish_time.adjusted_time || a.finish_time.finish_time).getTime()
       const timeB = new Date(b.finish_time.adjusted_time || b.finish_time.finish_time).getTime()
-      return timeB - timeA
+      return timeA - timeB
     })
 
   // Load pending finishes from localStorage
@@ -162,7 +174,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
 
     setTimeout(() => {
       setPendingFinishes(prev => prev.filter(pf => pf.status !== 'synced'))
-      onUpdate()
+      refreshDataInBackground()
     }, 2000)
   }
 
@@ -224,7 +236,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
           setError(result.error)
         } else {
           setPendingFinishes(prev => prev.filter(pf => pf.bibNumber !== bibNumbers[0] || pf.finishTime !== finishTime))
-          setTimeout(() => onUpdate(), 0)
+          refreshDataInBackground()
         }
       } else {
         const result = await recordMultipleFinishTimes(race.id, bibNumbers, finishTime)
@@ -235,7 +247,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
 
         if (result.success) {
           setPendingFinishes(prev => prev.filter(pf => !bibNumbers.includes(pf.bibNumber) || pf.finishTime !== finishTime))
-          setTimeout(() => onUpdate(), 0)
+          refreshDataInBackground()
         }
       }
     }
@@ -243,10 +255,20 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
 
   const handleEdit = (rp: any) => {
     const finishTime = rp.finish_time.adjusted_time || rp.finish_time.finish_time
+    // Format for datetime-local input: YYYY-MM-DDTHH:mm:ss (local time)
+    const date = new Date(finishTime)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const seconds = String(date.getSeconds()).padStart(2, '0')
+    const formatted = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+
     setEditingFinish({
       id: rp.finish_time.id,
       bibNumber: rp.bib_number,
-      finishTime: new Date(finishTime).toISOString().slice(0, 19)
+      finishTime: formatted
     })
   }
 
@@ -260,8 +282,8 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
     } else {
       setSuccess(`✓ Updated #${editingFinish.bibNumber}`)
       setEditingFinish(null)
+      refreshDataInBackground()
       setTimeout(() => {
-        onUpdate()
         setSuccess(null)
       }, 1000)
     }
@@ -276,8 +298,8 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
       setError(result.error)
     } else {
       setSuccess(`✓ Deleted #${bibNumber}`)
+      refreshDataInBackground()
       setTimeout(() => {
-        onUpdate()
         setSuccess(null)
       }, 1000)
     }
@@ -335,7 +357,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
 
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">Total:</span>
-                <span className="font-bold text-gray-900">{raceParticipants.length}</span>
+                <span className="font-bold text-gray-900">{localParticipants.length}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">Finished:</span>

@@ -5,8 +5,9 @@ import { signout } from '@/app/actions/auth'
 import ParticipantsView from './ParticipantsView'
 import RacesView from './RacesView'
 import UserManagement from './UserManagement'
+import RaceResultsDisplay from './RaceResultsDisplay'
 
-type View = 'participants' | 'races' | 'users'
+type View = 'participants' | 'races' | 'users' | 'results-display'
 
 export default function Dashboard() {
   const [currentView, setCurrentView] = useState<View>('races')
@@ -33,6 +34,16 @@ export default function Dashboard() {
                   }`}
                 >
                   Races
+                </button>
+                <button
+                  onClick={() => setCurrentView('results-display')}
+                  className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
+                    currentView === 'results-display'
+                      ? 'border-blue-500 text-gray-900'
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+                >
+                  Results Display
                 </button>
                 <button
                   onClick={() => setCurrentView('participants')}
@@ -69,10 +80,11 @@ export default function Dashboard() {
       </nav>
 
       {/* Main Content */}
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className={`${currentView === 'results-display' ? '' : 'mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8'}`}>
         {currentView === 'participants' && <ParticipantsView />}
         {currentView === 'races' && <RacesView />}
         {currentView === 'users' && <UserManagement />}
+        {currentView === 'results-display' && <RaceResultsDisplay />}
       </main>
     </div>
   )
