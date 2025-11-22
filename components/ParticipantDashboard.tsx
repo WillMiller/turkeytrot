@@ -41,6 +41,7 @@ interface ParticipantDashboardProps {
 export default function ParticipantDashboard({ user, raceParticipations }: ParticipantDashboardProps) {
   const [signingOut, setSigningOut] = useState(false)
   const [availableRaces, setAvailableRaces] = useState<Race[]>([])
+  const [loadingRaces, setLoadingRaces] = useState(true)
   const [selectedRaces, setSelectedRaces] = useState<string[]>([])
   const [registering, setRegistering] = useState(false)
   const [registrationMessage, setRegistrationMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
@@ -48,13 +49,17 @@ export default function ParticipantDashboard({ user, raceParticipations }: Parti
   // Load available races on mount
   useEffect(() => {
     const loadRaces = async () => {
+      setLoadingRaces(true)
       const result = await getAvailableRaces()
+      console.log('Available races result:', result)
       if (result.races) {
         // Filter out races the user is already registered for
         const registeredRaceIds = raceParticipations.map(rp => rp.race.id)
         const unregisteredRaces = result.races.filter(race => !registeredRaceIds.includes(race.id))
+        console.log('Unregistered races:', unregisteredRaces)
         setAvailableRaces(unregisteredRaces)
       }
+      setLoadingRaces(false)
     }
     loadRaces()
   }, [raceParticipations])
@@ -173,7 +178,9 @@ export default function ParticipantDashboard({ user, raceParticipations }: Parti
               </div>
             )}
 
-            {availableRaces.length > 0 && (
+            {loadingRaces ? (
+              <p className="text-gray-600">Loading available races...</p>
+            ) : availableRaces.length > 0 ? (
               <>
                 <h3 className="mb-3 text-lg font-semibold text-gray-900">Available Races</h3>
                 <div className="space-y-3 mb-6">
@@ -213,10 +220,12 @@ export default function ParticipantDashboard({ user, raceParticipations }: Parti
                   {registering ? 'Registering...' : `Register for ${selectedRaces.length || 0} Race${selectedRaces.length !== 1 ? 's' : ''}`}
                 </button>
               </>
-            )}
-
-            {availableRaces.length === 0 && upcomingRaces.length === 0 && (
-              <p className="text-gray-600">No races available at this time.</p>
+            ) : (
+              <p className="text-gray-600">
+                {upcomingRaces.length > 0
+                  ? "You're registered for all available races!"
+                  : "No races available at this time. Check back later!"}
+              </p>
             )}
           </div>
         </div>
