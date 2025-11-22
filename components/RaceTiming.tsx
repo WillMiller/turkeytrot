@@ -40,7 +40,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
   const refreshDataInBackground = async () => {
     const freshData = await getRaceParticipants(race.id)
     setLocalParticipants(freshData)
-    onUpdate() // Notify parent to refresh its data
+    // Don't call onUpdate() here to prevent page refresh during timing
   }
 
   // Only show participants with assigned bib numbers
@@ -524,7 +524,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
                             type="datetime-local"
                             value={editingFinish.finishTime}
                             onChange={(e) => setEditingFinish({ ...editingFinish, finishTime: e.target.value })}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded text-gray-900"
                           />
                         ) : (
                           <div>

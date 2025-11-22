@@ -62,7 +62,7 @@ export default function BulkParticipantUpload({ onClose, onSuccess }: { onClose:
         const firstName = values[firstNameIdx]
         const lastName = values[lastNameIdx]
         const email = values[emailIdx]
-        const gender = genderIdx !== -1 ? values[genderIdx] : undefined
+        const genderRaw = genderIdx !== -1 ? values[genderIdx] : undefined
 
         if (!firstName || !lastName || !email) {
           continue // Skip incomplete rows
@@ -73,13 +73,22 @@ export default function BulkParticipantUpload({ onClose, onSuccess }: { onClose:
           continue // Skip invalid emails
         }
 
+        // Parse gender - allow empty/undefined
+        let gender: string | undefined = undefined
+        if (genderRaw && genderRaw.trim() !== '') {
+          const normalized = genderRaw.toLowerCase().trim()
+          if (normalized === 'male' || normalized === 'm') {
+            gender = 'Male'
+          } else if (normalized === 'female' || normalized === 'f') {
+            gender = 'Female'
+          }
+        }
+
         participants.push({
           firstName,
           lastName,
           email,
-          gender: gender && (gender.toLowerCase() === 'male' || gender.toLowerCase() === 'female')
-            ? gender.toLowerCase() === 'male' ? 'Male' : 'Female'
-            : undefined
+          gender
         })
       }
 
