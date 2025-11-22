@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react'
 import { getParticipants, createParticipant, updateParticipant, deleteParticipant } from '@/app/actions/participants'
 import type { Participant } from '@/lib/types/database'
 import ParticipantForm from './ParticipantForm'
+import BulkParticipantUpload from './BulkParticipantUpload'
 
 export default function ParticipantsView() {
   const [participants, setParticipants] = useState<Participant[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showBulkUpload, setShowBulkUpload] = useState(false)
 
   useEffect(() => {
     loadParticipants()
@@ -55,18 +57,33 @@ export default function ParticipantsView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Racers</h2>
-        <button
-          onClick={handleCreate}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          Add Racer
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowBulkUpload(true)}
+            className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+          >
+            Bulk Upload CSV
+          </button>
+          <button
+            onClick={handleCreate}
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            Add Racer
+          </button>
+        </div>
       </div>
 
       {showForm && (
         <ParticipantForm
           participant={editingParticipant}
           onClose={handleFormClose}
+        />
+      )}
+
+      {showBulkUpload && (
+        <BulkParticipantUpload
+          onClose={() => setShowBulkUpload(false)}
+          onSuccess={loadParticipants}
         />
       )}
 
