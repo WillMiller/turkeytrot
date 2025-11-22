@@ -103,22 +103,17 @@ export default function BulkParticipantUpload({ onClose, onSuccess }: { onClose:
 
     const result = await bulkCreateParticipants(parsedData)
 
-    if (result.error) {
-      setError(result.error)
-      setUploading(false)
-    } else {
-      setResult({
-        success: result.success || 0,
-        errors: result.errors || []
-      })
-      setUploading(false)
+    setResult({
+      success: result.success || 0,
+      errors: result.errors || []
+    })
+    setUploading(false)
 
-      if (result.success && result.success > 0) {
-        setTimeout(() => {
-          onSuccess()
-          onClose()
-        }, 2000)
-      }
+    if (result.success && result.success > 0) {
+      setTimeout(() => {
+        onSuccess()
+        onClose()
+      }, 2000)
     }
   }
 
