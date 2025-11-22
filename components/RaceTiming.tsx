@@ -70,6 +70,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
     if (isOnline && pendingFinishes.filter(pf => pf.status === 'pending').length > 0) {
       syncPendingFinishes()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOnline])
 
   // Auto-focus the input
@@ -378,7 +379,7 @@ export default function RaceTiming({ race, raceParticipants, onUpdate }: RaceTim
                         </span>
                       </div>
                       <div className="flex items-center gap-4">
-                        {isEditing ? (
+                        {isEditing && editingFinish ? (
                           <div className="flex items-center gap-2">
                             <input
                               type="datetime-local"
