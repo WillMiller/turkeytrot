@@ -10,7 +10,7 @@ export default function HomePage() {
           <div className="flex h-16 justify-between items-center">
             <div className="flex items-center">
               <h1 className="text-2xl font-bold text-orange-600">
-                Sausalito Turkey Trot
+                Sausalito FREE Turkey Trot
               </h1>
             </div>
             <div className="flex gap-4">
@@ -36,7 +36,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-5xl font-bold tracking-tight text-white sm:text-6xl">
-              Sausalito Turkey Trot
+              Sausalito FREE Turkey Trot
             </h2>
             <p className="mt-6 text-xl text-orange-100">
               Join us for Sausalito&apos;s favorite Thanksgiving tradition!
@@ -179,10 +179,10 @@ export default function HomePage() {
       <footer className="bg-gray-900 py-8">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center text-gray-400">
-            <p className="text-lg font-semibold text-white mb-2">Sausalito Turkey Trot</p>
+            <p className="text-lg font-semibold text-white mb-2">Sausalito FREE Turkey Trot</p>
             <p>Gate 6 Road, Sausalito, CA 94965</p>
             <p className="mt-4 text-sm">
-              © {new Date().getFullYear()} Sausalito Turkey Trot. All rights reserved.
+              © {new Date().getFullYear()} Sausalito FREE Turkey Trot. All rights reserved.
             </p>
           </div>
         </div>

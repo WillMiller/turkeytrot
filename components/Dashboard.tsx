@@ -21,7 +21,7 @@ export default function Dashboard() {
             <div className="flex">
               <div className="flex flex-shrink-0 items-center">
                 <h1 className="text-xl font-bold text-gray-900">
-                  Sausalito Turkey Trot
+                  StartLine
                 </h1>
               </div>
               <div className="ml-6 flex space-x-8">
