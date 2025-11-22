@@ -60,13 +60,13 @@ export default function RaceResultsDisplay() {
 
   // Auto-scroll effect
   useEffect(() => {
-    if (autoScroll && categorizedResults.length > 0) {
+    if (autoScroll) {
       const interval = setInterval(() => {
-        setCurrentIndex((prev) => (prev + 1) % categorizedResults.length)
+        setCurrentIndex((prev) => prev + 1)
       }, scrollSpeed)
       return () => clearInterval(interval)
     }
-  }, [autoScroll, scrollSpeed, categorizedResults.length])
+  }, [autoScroll, scrollSpeed])
 
   const calculateAge = (dateOfBirth: string, raceDate: string) => {
     const dob = new Date(dateOfBirth)
@@ -240,7 +240,9 @@ export default function RaceResultsDisplay() {
     )
   }
 
-  const currentCategory = categorizedResults[currentIndex]
+  const currentCategory = categorizedResults.length > 0
+    ? categorizedResults[currentIndex % categorizedResults.length]
+    : null
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col bg-gradient-to-br from-blue-50 to-orange-50">
@@ -326,7 +328,7 @@ export default function RaceResultsDisplay() {
                     ←
                   </button>
                   <span className="text-sm text-gray-600 whitespace-nowrap">
-                    {currentIndex + 1}/{categorizedResults.length}
+                    {categorizedResults.length > 0 ? ((currentIndex % categorizedResults.length) + 1) : 0}/{categorizedResults.length}
                   </span>
                   <button
                     onClick={() => setCurrentIndex((prev) => (prev + 1) % categorizedResults.length)}
