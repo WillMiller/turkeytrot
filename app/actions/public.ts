@@ -32,7 +32,7 @@ export async function registerUser(formData: FormData) {
 
   // Create participant record
   const participantData = {
-    id: authData.user.id, // Use auth user ID as participant ID
+    id: authData.user!.id, // Use auth user ID as participant ID
     first_name: formData.get('first_name') as string,
     last_name: formData.get('last_name') as string,
     gender: formData.get('gender') as string,
@@ -49,7 +49,7 @@ export async function registerUser(formData: FormData) {
 
   if (participantError) {
     // If participant creation fails, delete the auth user
-    await supabase.auth.admin.deleteUser(authData.user.id)
+    await supabase.auth.admin.deleteUser(authData.user!.id)
     return { error: participantError.message }
   }
 
@@ -63,7 +63,7 @@ export async function registerUser(formData: FormData) {
         // Create race_participants entries WITHOUT bib numbers (set to 0 or null)
         const raceParticipants = selectedRaces.map((raceId) => ({
           race_id: raceId,
-          participant_id: authData.user.id,
+          participant_id: authData.user!.id,
           bib_number: 0, // Temporary bib number, will be assigned on race day
         }))
 
