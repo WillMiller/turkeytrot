@@ -20,10 +20,16 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
   const [loading, setLoading] = useState(false)
   const [editingBib, setEditingBib] = useState<{ id: string; number: number } | null>(null)
   const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [localRaceParticipants, setLocalRaceParticipants] = useState(raceParticipants)
 
   useEffect(() => {
     loadAllParticipants()
   }, [])
+
+  useEffect(() => {
+    setLocalRaceParticipants(raceParticipants)
+  }, [raceParticipants])
 
   const loadAllParticipants = async () => {
     const data = await getParticipants()
@@ -84,12 +90,20 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
   }
 
   const handleUpdateBib = async (raceParticipantId: string, newBibNumber: number) => {
+    // Optimistically update local state
+    setLocalRaceParticipants(prev =>
+      prev.map(rp => rp.id === raceParticipantId ? { ...rp, bib_number: newBibNumber } : rp)
+    )
+    setEditingBib(null)
+
     const result = await updateBibNumber(raceParticipantId, newBibNumber, race.id)
-    if (result.success) {
-      setEditingBib(null)
-      onUpdate()
-    } else if (result.error) {
+    if (result.error) {
       alert(result.error)
+      // Revert on error
+      setLocalRaceParticipants(raceParticipants)
+    } else {
+      // Update parent without reload
+      onUpdate()
     }
   }
 
@@ -116,85 +130,168 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
       await loadAllParticipants()
       setEditingParticipant(null)
       setLoading(false)
+      // Refresh race participants to update the warning badge
+      onUpdate()
     }
   }
 
+  // Filter and sort participants
+  const filteredParticipants = localRaceParticipants.filter(rp => {
+    if (!searchTerm) return true
+    const search = searchTerm.toLowerCase()
+    const name = `${rp.participant.first_name || ''} ${rp.participant.last_name || ''}`.toLowerCase()
+    const email = (rp.participant.email || '').toLowerCase()
+    const bib = (rp.bib_number || '').toString()
+    return name.includes(search) || email.includes(search) || bib.includes(search)
+  })
+
+  // Split into with/without bib and sort alphabetically
+  const withoutBib = filteredParticipants
+    .filter(rp => !rp.bib_number)
+    .sort((a, b) => {
+      const nameA = `${a.participant.last_name || ''} ${a.participant.first_name || ''}`.toLowerCase()
+      const nameB = `${b.participant.last_name || ''} ${b.participant.first_name || ''}`.toLowerCase()
+      return nameA.localeCompare(nameB)
+    })
+
+  const withBib = filteredParticipants
+    .filter(rp => rp.bib_number)
+    .sort((a, b) => {
+      const nameA = `${a.participant.last_name || ''} ${a.participant.first_name || ''}`.toLowerCase()
+      const nameB = `${b.participant.last_name || ''} ${b.participant.first_name || ''}`.toLowerCase()
+      return nameA.localeCompare(nameB)
+    })
+
+  const RacerItem = ({ rp }: { rp: any }) => (
+    <li key={rp.id} className="px-4 py-3 border-b border-gray-200 last:border-b-0">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {editingBib?.id === rp.id ? (
+            <input
+              type="number"
+              value={editingBib.number}
+              onChange={(e) => setEditingBib({ id: rp.id, number: parseInt(e.target.value) || 0 })}
+              onBlur={() => {
+                if (editingBib && editingBib.number > 0) {
+                  handleUpdateBib(rp.id, editingBib.number)
+                } else {
+                  setEditingBib(null)
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && editingBib && editingBib.number > 0) {
+                  handleUpdateBib(rp.id, editingBib.number)
+                } else if (e.key === 'Escape') {
+                  setEditingBib(null)
+                }
+              }}
+              className="w-16 rounded-md border border-gray-300 px-2 py-1 text-center text-sm font-bold text-gray-900"
+              autoFocus
+            />
+          ) : rp.bib_number ? (
+            <button
+              onClick={() => setEditingBib({ id: rp.id, number: rp.bib_number })}
+              className="w-16 rounded-md bg-blue-100 px-2 py-1 text-center text-sm font-bold text-blue-700 hover:bg-blue-200"
+            >
+              #{rp.bib_number}
+            </button>
+          ) : (
+            <button
+              onClick={() => setEditingBib({ id: rp.id, number: 1 })}
+              className="w-16 rounded-md bg-gray-100 px-2 py-1 text-center text-sm font-medium text-gray-500 hover:bg-gray-200"
+            >
+              Add #
+            </button>
+          )}
+          <div>
+            <div className="font-medium text-gray-900 flex items-center gap-2">
+              {[rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ') || 'Unnamed'}
+              {getMissingFields(rp.participant).length > 0 && (
+                <button
+                  onClick={() => setEditingParticipant(rp.participant)}
+                  className="inline-flex items-center gap-1 rounded-md bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 hover:bg-yellow-200"
+                  title={`Missing: ${getMissingFields(rp.participant).join(', ')}`}
+                >
+                  ⚠
+                </button>
+              )}
+            </div>
+            <div className="text-xs text-gray-600">
+              {rp.participant.gender && `${rp.participant.gender} • `}
+              {rp.participant.email}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() => handleRemoveParticipant(rp.id)}
+          className="rounded-md bg-red-100 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-200"
+        >
+          Remove
+        </button>
+      </div>
+    </li>
+  )
+
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium text-gray-900">Race Racers</h3>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-gray-900">Race Participants ({localRaceParticipants.length})</h2>
         <button
           onClick={() => setShowAddModal(true)}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
         >
           Add Racer
         </button>
       </div>
 
-      {raceParticipants.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          No racers added yet. Click &quot;Add Racer&quot; to get started.
+      {/* Search Bar */}
+      <div>
+        <input
+          type="text"
+          placeholder="Search by name, email, or bib number..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full rounded-md border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-500 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+        />
+      </div>
+
+      {localRaceParticipants.length === 0 ? (
+        <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
+          <p className="text-gray-500">No racers added to this race yet.</p>
         </div>
       ) : (
-        <div className="overflow-hidden bg-white shadow sm:rounded-md">
-          <ul className="divide-y divide-gray-200">
-            {raceParticipants.map((rp) => (
-              <li key={rp.id} className="px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    {editingBib?.id === rp.id && editingBib ? (
-                      <input
-                        type="number"
-                        value={editingBib.number}
-                        onChange={(e) => setEditingBib({ id: rp.id, number: parseInt(e.target.value) })}
-                        onBlur={() => editingBib && handleUpdateBib(rp.id, editingBib.number)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && editingBib) {
-                            handleUpdateBib(rp.id, editingBib.number)
-                          } else if (e.key === 'Escape') {
-                            setEditingBib(null)
-                          }
-                        }}
-                        className="w-20 rounded-md border border-gray-300 px-2 py-1 text-center text-lg font-bold text-gray-900"
-                        autoFocus
-                      />
-                    ) : (
-                      <button
-                        onClick={() => setEditingBib({ id: rp.id, number: rp.bib_number })}
-                        className="w-20 rounded-md bg-blue-100 px-3 py-2 text-center text-lg font-bold text-blue-700 hover:bg-blue-200"
-                      >
-                        #{rp.bib_number}
-                      </button>
-                    )}
-                    <div>
-                      <div className="font-medium text-gray-900 flex items-center gap-2">
-                        {[rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ') || 'Unnamed'}
-                        {getMissingFields(rp.participant).length > 0 && (
-                          <button
-                            onClick={() => setEditingParticipant(rp.participant)}
-                            className="inline-flex items-center gap-1 rounded-md bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 hover:bg-yellow-200"
-                            title={`Missing: ${getMissingFields(rp.participant).join(', ')}`}
-                          >
-                            ⚠ Missing Info
-                          </button>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {rp.participant.gender && `${rp.participant.gender} • `}
-                        {rp.participant.email || rp.participant.phone}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleRemoveParticipant(rp.id)}
-                    className="rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-200"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Without Bib Numbers Column */}
+          <div className="bg-white rounded-lg border border-gray-300 overflow-hidden">
+            <div className="bg-gray-100 px-4 py-3 border-b border-gray-300">
+              <h3 className="font-semibold text-gray-900">Without Bib Numbers ({withoutBib.length})</h3>
+            </div>
+            <ul className="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
+              {withoutBib.length === 0 ? (
+                <li className="px-4 py-8 text-center text-sm text-gray-500">
+                  All racers have bib numbers assigned
+                </li>
+              ) : (
+                withoutBib.map(rp => <RacerItem key={rp.id} rp={rp} />)
+              )}
+            </ul>
+          </div>
+
+          {/* With Bib Numbers Column */}
+          <div className="bg-white rounded-lg border border-gray-300 overflow-hidden">
+            <div className="bg-gray-100 px-4 py-3 border-b border-gray-300">
+              <h3 className="font-semibold text-gray-900">With Bib Numbers ({withBib.length})</h3>
+            </div>
+            <ul className="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
+              {withBib.length === 0 ? (
+                <li className="px-4 py-8 text-center text-sm text-gray-500">
+                  No bib numbers assigned yet
+                </li>
+              ) : (
+                withBib.map(rp => <RacerItem key={rp.id} rp={rp} />)
+              )}
+            </ul>
+          </div>
         </div>
       )}
 

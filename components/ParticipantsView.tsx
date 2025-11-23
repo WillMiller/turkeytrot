@@ -112,7 +112,6 @@ export default function ParticipantsView() {
                     </div>
                     <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-gray-600">
                       {participant.email && <div>Email: {participant.email}</div>}
-                      {participant.phone && <div>Phone: {participant.phone}</div>}
                       {participant.date_of_birth && <div>DOB: {new Date(participant.date_of_birth).toLocaleDateString()}</div>}
                       {participant.emergency_contact_name && (
                         <div>Emergency: {participant.emergency_contact_name} {participant.emergency_contact_phone && `(${participant.emergency_contact_phone})`}</div>

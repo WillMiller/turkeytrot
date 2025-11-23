@@ -109,7 +109,7 @@ export default function ParticipantForm({ participant, onClose }: ParticipantFor
                   />
                 </div>
 
-                <div>
+                <div className="col-span-2">
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                     Email
                   </label>
@@ -118,19 +118,6 @@ export default function ParticipantForm({ participant, onClose }: ParticipantFor
                     name="email"
                     id="email"
                     defaultValue={participant?.email || ''}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    id="phone"
-                    defaultValue={participant?.phone || ''}
                     className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                   />
                 </div>
