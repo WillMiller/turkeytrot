@@ -171,6 +171,8 @@ export async function bulkCreateParticipants(participants: BulkParticipant[]) {
 
   for (const p of participants) {
     try {
+      console.log(`Processing participant: ${p.email}, gender: ${p.gender || 'null'}`)
+
       // Check for duplicate email
       const { data: existingEmail } = await supabase
         .from('participants')
@@ -200,9 +202,12 @@ export async function bulkCreateParticipants(participants: BulkParticipant[]) {
         .single()
 
       if (participantError) {
+        console.error(`Participant creation error for ${p.email}:`, participantError)
         errors.push(`${p.email}: ${participantError.message}`)
         continue
       }
+
+      console.log(`Participant created for ${p.email}, id: ${participant.id}`)
 
       // Create auth user with a temporary password using admin client
       // User will need to reset password via password reset link
@@ -220,14 +225,15 @@ export async function bulkCreateParticipants(participants: BulkParticipant[]) {
       if (authError) {
         // If auth creation fails, delete the participant record
         await supabase.from('participants').delete().eq('id', participant.id)
+        console.error(`Auth error for ${p.email}:`, authError)
         errors.push(`${p.email}: Failed to create auth account - ${authError.message}`)
         continue
       }
 
       successCount++
     } catch (err) {
-      errors.push(`${p.email}: Unexpected error`)
-      console.error(err)
+      console.error(`Unexpected error for ${p.email}:`, err)
+      errors.push(`${p.email}: Unexpected error - ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 
