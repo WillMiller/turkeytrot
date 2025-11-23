@@ -166,7 +166,7 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
     <li key={rp.id} className="px-4 py-3 border-b border-gray-200 last:border-b-0">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {editingBib?.id === rp.id ? (
+          {editingBib?.id === rp.id && editingBib ? (
             <input
               type="number"
               value={editingBib.number}
