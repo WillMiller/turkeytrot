@@ -90,7 +90,8 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
   }
 
   const handleUpdateBib = async (raceParticipantId: string, newBibNumber: number) => {
-    // Optimistically update local state
+    // Optimistically update local state immediately
+    const previousState = localRaceParticipants
     setLocalRaceParticipants(prev =>
       prev.map(rp => rp.id === raceParticipantId ? { ...rp, bib_number: newBibNumber } : rp)
     )
@@ -100,11 +101,44 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
     if (result.error) {
       alert(result.error)
       // Revert on error
-      setLocalRaceParticipants(raceParticipants)
-    } else {
-      // Update parent without reload
-      onUpdate()
+      setLocalRaceParticipants(previousState)
     }
+    // Don't call onUpdate() to prevent page refresh - local state is already updated
+  }
+
+  const handleAutoAssignBibs = async () => {
+    if (!confirm('Auto-assign bib numbers to all participants without bibs? This will assign sequential numbers starting from the next available number.')) {
+      return
+    }
+
+    setLoading(true)
+
+    // Find the highest current bib number
+    const highestBib = Math.max(0, ...localRaceParticipants.map(rp => rp.bib_number || 0))
+    let nextBibNumber = highestBib + 1
+
+    // Get participants without bib numbers, sorted alphabetically
+    const participantsWithoutBibs = localRaceParticipants
+      .filter(rp => !rp.bib_number)
+      .sort((a, b) => {
+        const nameA = `${a.participant.last_name || ''} ${a.participant.first_name || ''}`.toLowerCase()
+        const nameB = `${b.participant.last_name || ''} ${b.participant.first_name || ''}`.toLowerCase()
+        return nameA.localeCompare(nameB)
+      })
+
+    // Assign bib numbers sequentially
+    for (const rp of participantsWithoutBibs) {
+      const result = await updateBibNumber(rp.id, nextBibNumber, race.id)
+      if (!result.error) {
+        // Update local state
+        setLocalRaceParticipants(prev =>
+          prev.map(p => p.id === rp.id ? { ...p, bib_number: nextBibNumber } : p)
+        )
+        nextBibNumber++
+      }
+    }
+
+    setLoading(false)
   }
 
   const handleUpdateParticipantInfo = async () => {
@@ -169,7 +203,7 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
           {editingBib?.id === rp.id && editingBib ? (
             <input
               type="number"
-              value={editingBib.number}
+              value={editingBib.number === 0 ? '' : editingBib.number}
               onChange={(e) => setEditingBib({ id: rp.id, number: parseInt(e.target.value) || 0 })}
               onBlur={() => {
                 if (editingBib && editingBib.number > 0) {
@@ -185,6 +219,7 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
                   setEditingBib(null)
                 }
               }}
+              placeholder="#"
               className="w-16 rounded-md border border-gray-300 px-2 py-1 text-center text-sm font-bold text-gray-900"
               autoFocus
             />
@@ -197,7 +232,7 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
             </button>
           ) : (
             <button
-              onClick={() => setEditingBib({ id: rp.id, number: 1 })}
+              onClick={() => setEditingBib({ id: rp.id, number: 0 })}
               className="w-16 rounded-md bg-gray-100 px-2 py-1 text-center text-sm font-medium text-gray-500 hover:bg-gray-200"
             >
               Add #
@@ -236,12 +271,23 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-900">Race Participants ({localRaceParticipants.length})</h2>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
-        >
-          Add Racer
-        </button>
+        <div className="flex gap-3">
+          {withoutBib.length > 0 && (
+            <button
+              onClick={handleAutoAssignBibs}
+              disabled={loading}
+              className="rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700 disabled:opacity-50"
+            >
+              {loading ? 'Assigning...' : `Auto-Assign ${withoutBib.length} Bib#s`}
+            </button>
+          )}
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+          >
+            Add Racer
+          </button>
+        </div>
       </div>
 
       {/* Search Bar */}
