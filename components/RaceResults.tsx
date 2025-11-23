@@ -22,6 +22,16 @@ export default function RaceResults({ race, raceParticipants, onUpdate }: RaceRe
     return calculatePlacements(raceParticipants, race.start_time)
   }, [raceParticipants, race.start_time])
 
+  // DNS (Did Not Start) - participants without bib numbers
+  const dnsParticipants = useMemo(() => {
+    return raceParticipants.filter(rp => !rp.bib_number)
+  }, [raceParticipants])
+
+  // DNF (Did Not Finish) - participants with bib but no finish time
+  const dnfParticipants = useMemo(() => {
+    return raceParticipants.filter(rp => rp.bib_number && !rp.finish_time)
+  }, [raceParticipants])
+
   const handleUpdateFinishTime = async (finishTimeId: string, newTime: string) => {
     const result = await updateFinishTime(finishTimeId, newTime)
     if (result.success) {
@@ -235,6 +245,96 @@ export default function RaceResults({ race, raceParticipants, onUpdate }: RaceRe
           </div>
         </div>
       ))}
+
+      {/* DNF Section */}
+      {dnfParticipants.length > 0 && (
+        <div className="rounded-lg bg-white shadow">
+          <div className="border-b border-gray-200 px-6 py-4">
+            <h3 className="text-lg font-medium text-gray-900">DNF - Did Not Finish ({dnfParticipants.length})</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Bib
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Gender
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {dnfParticipants.map((rp) => (
+                  <tr key={rp.id}>
+                    <td className="whitespace-nowrap px-6 py-4">
+                      <span className="rounded-md bg-orange-100 px-2 py-1 text-sm font-bold text-orange-700">
+                        {rp.bib_number}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                      {[rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ') || 'Unnamed'}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                      {rp.participant.gender || '-'}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-orange-600">
+                      DNF
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* DNS Section */}
+      {dnsParticipants.length > 0 && (
+        <div className="rounded-lg bg-white shadow">
+          <div className="border-b border-gray-200 px-6 py-4">
+            <h3 className="text-lg font-medium text-gray-900">DNS - Did Not Start ({dnsParticipants.length})</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Gender
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {dnsParticipants.map((rp) => (
+                  <tr key={rp.id}>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                      {[rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ') || 'Unnamed'}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                      {rp.participant.gender || '-'}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-600">
+                      DNS
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

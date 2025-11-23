@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getParticipants } from '@/app/actions/participants'
+import { getParticipants, updateParticipant } from '@/app/actions/participants'
 import { addParticipantToRace, removeParticipantFromRace, updateBibNumber } from '@/app/actions/races'
 import type { Race, Participant } from '@/lib/types/database'
 
@@ -19,6 +19,7 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [editingBib, setEditingBib] = useState<{ id: string; number: number } | null>(null)
+  const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null)
 
   useEffect(() => {
     loadAllParticipants()
@@ -32,6 +33,19 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
   const availableParticipants = allParticipants.filter(
     p => !raceParticipants.some(rp => rp.participant_id === p.id)
   )
+
+  // Check for missing participant fields
+  const getMissingFields = (participant: Participant): string[] => {
+    const missing: string[] = []
+    if (!participant.gender) missing.push('Gender')
+    if (!participant.date_of_birth) missing.push('Date of Birth')
+    if (!participant.emergency_contact_name) missing.push('Emergency Contact Name')
+    if (!participant.emergency_contact_phone) missing.push('Emergency Contact Phone')
+    return missing
+  }
+
+  const selectedParticipantData = allParticipants.find(p => p.id === selectedParticipant)
+  const missingFields = selectedParticipantData ? getMissingFields(selectedParticipantData) : []
 
   const handleAddParticipant = async () => {
     if (!selectedParticipant || !bibNumber) {
@@ -76,6 +90,32 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
       onUpdate()
     } else if (result.error) {
       alert(result.error)
+    }
+  }
+
+  const handleUpdateParticipantInfo = async () => {
+    if (!editingParticipant) return
+
+    setLoading(true)
+    const formData = new FormData()
+    formData.append('first_name', editingParticipant.first_name || '')
+    formData.append('last_name', editingParticipant.last_name || '')
+    formData.append('email', editingParticipant.email || '')
+    formData.append('gender', editingParticipant.gender || '')
+    formData.append('phone', editingParticipant.phone || '')
+    formData.append('date_of_birth', editingParticipant.date_of_birth || '')
+    formData.append('emergency_contact_name', editingParticipant.emergency_contact_name || '')
+    formData.append('emergency_contact_phone', editingParticipant.emergency_contact_phone || '')
+
+    const result = await updateParticipant(editingParticipant.id, formData)
+
+    if (result.error) {
+      setError(result.error)
+      setLoading(false)
+    } else {
+      await loadAllParticipants()
+      setEditingParticipant(null)
+      setLoading(false)
     }
   }
 
@@ -127,8 +167,17 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
                       </button>
                     )}
                     <div>
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-gray-900 flex items-center gap-2">
                         {[rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ') || 'Unnamed'}
+                        {getMissingFields(rp.participant).length > 0 && (
+                          <button
+                            onClick={() => setEditingParticipant(rp.participant)}
+                            className="inline-flex items-center gap-1 rounded-md bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 hover:bg-yellow-200"
+                            title={`Missing: ${getMissingFields(rp.participant).join(', ')}`}
+                          >
+                            ⚠ Missing Info
+                          </button>
+                        )}
                       </div>
                       <div className="text-sm text-gray-600">
                         {rp.participant.gender && `${rp.participant.gender} • `}
@@ -201,6 +250,34 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
                       className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                     />
                   </div>
+
+                  {/* Missing Fields Warning */}
+                  {missingFields.length > 0 && (
+                    <div className="rounded-md bg-yellow-50 border border-yellow-200 p-4">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0">
+                          <span className="text-yellow-600">⚠</span>
+                        </div>
+                        <div className="ml-3 flex-1">
+                          <h3 className="text-sm font-medium text-yellow-800">
+                            Missing Information
+                          </h3>
+                          <div className="mt-2 text-sm text-yellow-700">
+                            <p>This participant is missing: {missingFields.join(', ')}</p>
+                          </div>
+                          <div className="mt-3">
+                            <button
+                              type="button"
+                              onClick={() => selectedParticipantData && setEditingParticipant(selectedParticipantData)}
+                              className="text-sm font-medium text-yellow-800 hover:text-yellow-900 underline"
+                            >
+                              Fill Missing Info
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -218,6 +295,95 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
                     setError(null)
                     setSelectedParticipant('')
                     setBibNumber('')
+                  }}
+                  className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Participant Info Modal */}
+      {editingParticipant && (
+        <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="edit-modal-title" role="dialog" aria-modal="true">
+          <div className="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setEditingParticipant(null)}></div>
+
+            <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:align-middle">
+              <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4" id="edit-modal-title">
+                  Complete Participant Information
+                </h3>
+
+                {error && (
+                  <div className="mb-4 rounded-md bg-red-50 p-4">
+                    <p className="text-sm text-red-800">{error}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Gender</label>
+                    <select
+                      value={editingParticipant.gender || ''}
+                      onChange={(e) => setEditingParticipant({ ...editingParticipant, gender: e.target.value })}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    >
+                      <option value="">Choose...</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
+                    <input
+                      type="date"
+                      value={editingParticipant.date_of_birth || ''}
+                      onChange={(e) => setEditingParticipant({ ...editingParticipant, date_of_birth: e.target.value })}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Emergency Contact Name</label>
+                    <input
+                      type="text"
+                      value={editingParticipant.emergency_contact_name || ''}
+                      onChange={(e) => setEditingParticipant({ ...editingParticipant, emergency_contact_name: e.target.value })}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Emergency Contact Phone</label>
+                    <input
+                      type="tel"
+                      value={editingParticipant.emergency_contact_phone || ''}
+                      onChange={(e) => setEditingParticipant({ ...editingParticipant, emergency_contact_phone: e.target.value })}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                <button
+                  onClick={handleUpdateParticipantInfo}
+                  disabled={loading}
+                  className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 sm:ml-3 sm:w-auto disabled:opacity-50"
+                >
+                  {loading ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingParticipant(null)
+                    setError(null)
                   }}
                   className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
                 >
