@@ -75,6 +75,9 @@ export default function ParticipantLoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-100 py-12 px-4">
       <div className={`w-full space-y-8 rounded-lg bg-white p-8 shadow-md ${isSignup ? 'max-w-2xl' : 'max-w-md'}`}>
         <div>
+          <div className="flex justify-center mb-6">
+            <img src="/logo.png" alt="Logo" className="h-16 w-auto" />
+          </div>
           <h2 className="text-center text-3xl font-bold text-gray-900">
             Racer Portal
           </h2>

@@ -34,6 +34,9 @@ export default function PublicRegistrationPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-100 py-12 px-4">
       <div className="w-full max-w-2xl rounded-lg bg-white p-8 shadow-md">
         <div className="mb-6">
+          <div className="flex justify-center mb-6">
+            <img src="/logo.png" alt="Logo" className="h-16 w-auto" />
+          </div>
           <h2 className="text-center text-3xl font-bold text-gray-900">
             Create Your Account
           </h2>

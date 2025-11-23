@@ -128,11 +128,14 @@ export default function ParticipantDashboard({ user, raceParticipations }: Parti
       <div className="mx-auto max-w-7xl px-4 py-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Dashboard</h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Signed in as {user.email}
-            </p>
+          <div className="flex items-center gap-4">
+            <img src="/logo.png" alt="Logo" className="h-12 w-auto" />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">My Dashboard</h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Signed in as {user.email}
+              </p>
+            </div>
           </div>
           <div className="flex gap-3">
             <Link

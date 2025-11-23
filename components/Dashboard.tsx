@@ -20,9 +20,7 @@ export default function Dashboard() {
           <div className="flex h-16 justify-between">
             <div className="flex">
               <div className="flex flex-shrink-0 items-center">
-                <h1 className="text-xl font-bold text-gray-900">
-                  StartLine
-                </h1>
+                <img src="/logo.png" alt="Logo" className="h-10 w-auto" />
               </div>
               <div className="ml-6 flex space-x-8">
                 <button

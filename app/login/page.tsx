@@ -23,6 +23,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-md">
         <div>
+          <div className="flex justify-center mb-6">
+            <img src="/logo.png" alt="Logo" className="h-16 w-auto" />
+          </div>
           <h2 className="text-center text-3xl font-bold text-gray-900">
             Admin Portal
           </h2>
