@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import type { Race, RaceParticipant, FinishTime, Participant } from '@/lib/types/database'
 
 export async function getRaces() {
@@ -67,7 +67,7 @@ export async function createRace(formData: FormData) {
   }
 
   revalidatePath('/')
-  return { success: true }
+  return { success: true, raceId: newRace.id }
 }
 
 export async function updateRace(id: string, formData: FormData) {
@@ -424,4 +424,117 @@ export async function deleteFinishTime(finishTimeId: string) {
 
   revalidatePath('/')
   return { success: true }
+}
+
+interface BulkRaceParticipant {
+  email: string
+  firstName: string
+  lastName: string
+}
+
+export async function bulkAddParticipantsToRace(raceId: string, participants: BulkRaceParticipant[]) {
+  const supabase = await createClient()
+  const adminClient = createAdminClient()
+
+  let successCount = 0
+  const errors: string[] = []
+
+  for (const p of participants) {
+    try {
+      // Sanitize email
+      const email = p.email.replace(/\s+/g, '').toLowerCase()
+
+      // Check if participant exists
+      let participantId: string
+      const { data: existingParticipant } = await supabase
+        .from('participants')
+        .select('id')
+        .eq('email', email)
+        .single()
+
+      if (existingParticipant) {
+        // Participant exists, use their ID
+        participantId = existingParticipant.id
+      } else {
+        // Create new participant
+        const { data: newParticipant, error: createError } = await supabase
+          .from('participants')
+          .insert({
+            first_name: p.firstName,
+            last_name: p.lastName,
+            email: email,
+            gender: null,
+            phone: null,
+            date_of_birth: null,
+            emergency_contact_name: null,
+            emergency_contact_phone: null,
+          })
+          .select()
+          .single()
+
+        if (createError || !newParticipant) {
+          errors.push(`${email}: Failed to create participant - ${createError?.message}`)
+          continue
+        }
+
+        participantId = newParticipant.id
+
+        // Create auth account for new participant
+        const tempPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12)
+        const { error: authError } = await adminClient.auth.admin.createUser({
+          email: email,
+          password: tempPassword,
+          email_confirm: true,
+          user_metadata: {
+            participant_id: participantId
+          }
+        })
+
+        if (authError) {
+          // If auth fails, delete the participant
+          await supabase.from('participants').delete().eq('id', participantId)
+          errors.push(`${email}: Failed to create auth account - ${authError.message}`)
+          continue
+        }
+      }
+
+      // Check if already in race
+      const { data: existing } = await supabase
+        .from('race_participants')
+        .select('id')
+        .eq('race_id', raceId)
+        .eq('participant_id', participantId)
+        .single()
+
+      if (existing) {
+        errors.push(`${email}: Already in this race`)
+        continue
+      }
+
+      // Add to race (without bib number - will be assigned later)
+      const { error: addError } = await supabase
+        .from('race_participants')
+        .insert({
+          race_id: raceId,
+          participant_id: participantId,
+          bib_number: null
+        })
+
+      if (addError) {
+        errors.push(`${email}: Failed to add to race - ${addError.message}`)
+        continue
+      }
+
+      successCount++
+    } catch (err) {
+      errors.push(`${p.email}: Unexpected error - ${err instanceof Error ? err.message : 'Unknown'}`)
+    }
+  }
+
+  revalidatePath('/')
+
+  return {
+    success: successCount,
+    errors: errors
+  }
 }
