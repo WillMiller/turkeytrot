@@ -61,12 +61,15 @@ export default function BulkParticipantUpload({ onClose, onSuccess }: { onClose:
 
         const firstName = values[firstNameIdx]
         const lastName = values[lastNameIdx]
-        const email = values[emailIdx]
+        const emailRaw = values[emailIdx]
         const genderRaw = genderIdx !== -1 ? values[genderIdx] : undefined
 
-        if (!firstName || !lastName || !email) {
+        if (!firstName || !lastName || !emailRaw) {
           continue // Skip incomplete rows
         }
+
+        // Sanitize email - remove spaces and convert to lowercase
+        const email = emailRaw.replace(/\s+/g, '').toLowerCase()
 
         // Basic email validation
         if (!email.includes('@')) {
