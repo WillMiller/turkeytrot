@@ -244,3 +244,57 @@ export async function bulkCreateParticipants(participants: BulkParticipant[]) {
     errors: errors
   }
 }
+
+export async function createWalkupParticipant(
+  firstName: string,
+  lastName: string,
+  raceId: string,
+  bibNumber?: number,
+  email?: string,
+  gender?: string,
+  dateOfBirth?: string,
+  emergencyContactName?: string,
+  emergencyContactPhone?: string
+) {
+  const supabase = await createClient()
+
+  // Create participant with provided info
+  const { data: participant, error: participantError } = await supabase
+    .from('participants')
+    .insert({
+      first_name: firstName,
+      last_name: lastName,
+      email: email || null,
+      gender: gender || null,
+      phone: null,
+      date_of_birth: dateOfBirth || null,
+      emergency_contact_name: emergencyContactName || null,
+      emergency_contact_phone: emergencyContactPhone || null,
+    })
+    .select()
+    .single()
+
+  if (participantError) {
+    console.error('Error creating walk-up participant:', participantError)
+    return { error: participantError.message }
+  }
+
+  // Add them to the race
+  const { error: raceError } = await supabase
+    .from('race_participants')
+    .insert({
+      race_id: raceId,
+      participant_id: participant.id,
+      bib_number: bibNumber || null,
+    })
+
+  if (raceError) {
+    // Clean up participant if race add fails
+    await supabase.from('participants').delete().eq('id', participant.id)
+    console.error('Error adding walk-up to race:', raceError)
+    return { error: raceError.message }
+  }
+
+  revalidatePath('/')
+  return { success: true, participantId: participant.id }
+}

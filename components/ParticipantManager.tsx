@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getParticipants, updateParticipant } from '@/app/actions/participants'
+import { getParticipants, updateParticipant, createWalkupParticipant } from '@/app/actions/participants'
 import { addParticipantToRace, removeParticipantFromRace, updateBibNumber } from '@/app/actions/races'
 import type { Race, Participant } from '@/lib/types/database'
 
@@ -14,8 +14,17 @@ interface ParticipantManagerProps {
 export default function ParticipantManager({ race, raceParticipants, onUpdate }: ParticipantManagerProps) {
   const [allParticipants, setAllParticipants] = useState<Participant[]>([])
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showWalkupModal, setShowWalkupModal] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<string>('')
   const [bibNumber, setBibNumber] = useState<string>('')
+  const [walkupFirstName, setWalkupFirstName] = useState('')
+  const [walkupLastName, setWalkupLastName] = useState('')
+  const [walkupBibNumber, setWalkupBibNumber] = useState('')
+  const [walkupEmail, setWalkupEmail] = useState('')
+  const [walkupGender, setWalkupGender] = useState('')
+  const [walkupDateOfBirth, setWalkupDateOfBirth] = useState('')
+  const [walkupEmergencyContactName, setWalkupEmergencyContactName] = useState('')
+  const [walkupEmergencyContactPhone, setWalkupEmergencyContactPhone] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [editingBib, setEditingBib] = useState<{ id: string; number: number } | null>(null)
@@ -71,6 +80,45 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
       setShowAddModal(false)
       setSelectedParticipant('')
       setBibNumber('')
+      onUpdate()
+      setLoading(false)
+    }
+  }
+
+  const handleWalkupRegistration = async () => {
+    if (!walkupFirstName || !walkupLastName) {
+      setError('Please enter at least a first and last name')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    const result = await createWalkupParticipant(
+      walkupFirstName,
+      walkupLastName,
+      race.id,
+      walkupBibNumber ? parseInt(walkupBibNumber) : undefined,
+      walkupEmail || undefined,
+      walkupGender || undefined,
+      walkupDateOfBirth || undefined,
+      walkupEmergencyContactName || undefined,
+      walkupEmergencyContactPhone || undefined
+    )
+
+    if (result.error) {
+      setError(result.error)
+      setLoading(false)
+    } else {
+      setShowWalkupModal(false)
+      setWalkupFirstName('')
+      setWalkupLastName('')
+      setWalkupBibNumber('')
+      setWalkupEmail('')
+      setWalkupGender('')
+      setWalkupDateOfBirth('')
+      setWalkupEmergencyContactName('')
+      setWalkupEmergencyContactPhone('')
       onUpdate()
       setLoading(false)
     }
@@ -281,6 +329,12 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
               {loading ? 'Assigning...' : `Auto-Assign ${withoutBib.length} Bib#s`}
             </button>
           )}
+          <button
+            onClick={() => setShowWalkupModal(true)}
+            className="rounded-md bg-orange-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-700"
+          >
+            Walk-up Registration
+          </button>
           <button
             onClick={() => setShowAddModal(true)}
             className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
@@ -527,6 +581,175 @@ export default function ParticipantManager({ race, raceParticipants, onUpdate }:
                   onClick={() => {
                     setEditingParticipant(null)
                     setError(null)
+                  }}
+                  className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Walk-up Registration Modal */}
+      {showWalkupModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="walkup-modal-title" role="dialog" aria-modal="true">
+          <div className="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowWalkupModal(false)}></div>
+
+            <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:align-middle">
+              <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4" id="walkup-modal-title">
+                  Walk-up Registration
+                </h3>
+
+                <p className="text-sm text-gray-600 mb-4">
+                  Quick registration for race day walk-ups. Only name is required. Email and other details can be added later.
+                </p>
+
+                {error && (
+                  <div className="mb-4 rounded-md bg-red-50 p-4">
+                    <p className="text-sm text-red-800">{error}</p>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="walkup_first_name" className="block text-sm font-medium text-gray-700">
+                      First Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="walkup_first_name"
+                      value={walkupFirstName}
+                      onChange={(e) => setWalkupFirstName(e.target.value)}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-orange-500"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="walkup_last_name" className="block text-sm font-medium text-gray-700">
+                      Last Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="walkup_last_name"
+                      value={walkupLastName}
+                      onChange={(e) => setWalkupLastName(e.target.value)}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="walkup_bib_number" className="block text-sm font-medium text-gray-700">
+                      Bib Number (optional)
+                    </label>
+                    <input
+                      type="number"
+                      id="walkup_bib_number"
+                      value={walkupBibNumber}
+                      onChange={(e) => setWalkupBibNumber(e.target.value)}
+                      placeholder="Leave blank to assign later"
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="walkup_email" className="block text-sm font-medium text-gray-700">
+                      Email (optional)
+                    </label>
+                    <input
+                      type="email"
+                      id="walkup_email"
+                      value={walkupEmail}
+                      onChange={(e) => setWalkupEmail(e.target.value)}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="walkup_gender" className="block text-sm font-medium text-gray-700">
+                      Gender (optional)
+                    </label>
+                    <select
+                      id="walkup_gender"
+                      value={walkupGender}
+                      onChange={(e) => setWalkupGender(e.target.value)}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-orange-500"
+                    >
+                      <option value="">Select...</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="walkup_date_of_birth" className="block text-sm font-medium text-gray-700">
+                      Date of Birth (optional)
+                    </label>
+                    <input
+                      type="date"
+                      id="walkup_date_of_birth"
+                      value={walkupDateOfBirth}
+                      onChange={(e) => setWalkupDateOfBirth(e.target.value)}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="walkup_emergency_contact_name" className="block text-sm font-medium text-gray-700">
+                      Emergency Contact Name (optional)
+                    </label>
+                    <input
+                      type="text"
+                      id="walkup_emergency_contact_name"
+                      value={walkupEmergencyContactName}
+                      onChange={(e) => setWalkupEmergencyContactName(e.target.value)}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="walkup_emergency_contact_phone" className="block text-sm font-medium text-gray-700">
+                      Emergency Contact Phone (optional)
+                    </label>
+                    <input
+                      type="tel"
+                      id="walkup_emergency_contact_phone"
+                      value={walkupEmergencyContactPhone}
+                      onChange={(e) => setWalkupEmergencyContactPhone(e.target.value)}
+                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-orange-500"
+                    />
+                  </div>
+
+                  <div className="rounded-md bg-blue-50 border border-blue-200 p-4">
+                    <p className="text-sm text-blue-800">
+                      💡 Only name is required. All other fields are optional and can be filled in now or added later.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                <button
+                  onClick={handleWalkupRegistration}
+                  disabled={loading}
+                  className="inline-flex w-full justify-center rounded-md bg-orange-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-700 sm:ml-3 sm:w-auto disabled:opacity-50"
+                >
+                  {loading ? 'Registering...' : 'Register Walk-up'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowWalkupModal(false)
+                    setError(null)
+                    setWalkupFirstName('')
+                    setWalkupLastName('')
+                    setWalkupBibNumber('')
                   }}
                   className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
                 >
