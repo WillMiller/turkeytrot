@@ -26,11 +26,11 @@ export default function RaceResultsDisplay() {
   const [selectedRace, setSelectedRace] = useState<Race | null>(null)
   const [raceParticipants, setRaceParticipants] = useState<any[]>([])
   const [categoryType, setCategoryType] = useState<CategoryType>('overall')
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [autoScroll, setAutoScroll] = useState(false)
-  const [scrollSpeed, setScrollSpeed] = useState(3000) // milliseconds per item
+  const [autoScroll, setAutoScroll] = useState(true)
+  const [scrollSpeed, setScrollSpeed] = useState(30) // pixels per second
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [scrollPosition, setScrollPosition] = useState(0) // Track scroll position in pixels
 
   // Load races on mount
   useEffect(() => {
@@ -45,28 +45,27 @@ export default function RaceResultsDisplay() {
   // Load race participants when race is selected
   useEffect(() => {
     if (selectedRace) {
+      let prevFinishedCount = 0
+
       const loadParticipants = async () => {
         const data = await getRaceParticipants(selectedRace.id)
+        const finishedCount = data.filter(rp => rp.finish_time).length
+
         setRaceParticipants(data)
-        setCurrentIndex(0)
+
+        // Reset scroll position if new finishers were added (but not on initial load)
+        if (prevFinishedCount > 0 && finishedCount > prevFinishedCount) {
+          setScrollPosition(0)
+        }
+        prevFinishedCount = finishedCount
       }
       loadParticipants()
 
-      // Refresh every 10 seconds to get new finish times
-      const interval = setInterval(loadParticipants, 10000)
+      // Refresh every 5 seconds to get new finish times
+      const interval = setInterval(loadParticipants, 5000)
       return () => clearInterval(interval)
     }
   }, [selectedRace])
-
-  // Auto-scroll effect
-  useEffect(() => {
-    if (autoScroll) {
-      const interval = setInterval(() => {
-        setCurrentIndex((prev) => prev + 1)
-      }, scrollSpeed)
-      return () => clearInterval(interval)
-    }
-  }, [autoScroll, scrollSpeed])
 
   const calculateAge = (dateOfBirth: string, raceDate: string) => {
     const dob = new Date(dateOfBirth)
@@ -208,6 +207,40 @@ export default function RaceResultsDisplay() {
     })
   }
 
+  // Continuous auto-scroll effect
+  useEffect(() => {
+    if (autoScroll && categorizedResults.length > 0) {
+      const currentCat = categorizedResults[0]
+      if (currentCat && currentCat.results.length > 0) {
+        // Update scroll position smoothly using requestAnimationFrame
+        let lastTime = Date.now()
+        let animationFrame: number
+
+        const animate = () => {
+          const currentTime = Date.now()
+          const deltaTime = currentTime - lastTime
+          lastTime = currentTime
+
+          setScrollPosition((prev) => {
+            const newPosition = prev + (scrollSpeed * deltaTime) / 1000
+            // Reset to 0 when we've scrolled through everything
+            // Assuming average row height of 50px (compact rows)
+            const totalHeight = currentCat.results.length * 50
+            return newPosition >= totalHeight ? 0 : newPosition
+          })
+
+          animationFrame = requestAnimationFrame(animate)
+        }
+
+        animationFrame = requestAnimationFrame(animate)
+        return () => cancelAnimationFrame(animationFrame)
+      }
+    } else {
+      // Reset scroll position when auto-scroll is disabled
+      setScrollPosition(0)
+    }
+  }, [autoScroll, scrollSpeed, categorizedResults])
+
   if (loading) {
     return <div className="text-center py-8">Loading races...</div>
   }
@@ -240,9 +273,16 @@ export default function RaceResultsDisplay() {
     )
   }
 
-  const currentCategory = categorizedResults.length > 0
-    ? categorizedResults[currentIndex % categorizedResults.length]
-    : null
+  // Get results and apply search filter
+  const currentCategory = categorizedResults.length > 0 ? categorizedResults[0] : null
+  const unfilteredResults = currentCategory?.results || []
+  const allResults = unfilteredResults.filter(rp => {
+    if (!searchQuery) return true
+    const search = searchQuery.toLowerCase()
+    const name = [rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ').toLowerCase()
+    return name.includes(search) || rp.bib_number?.toString().includes(search)
+  })
+  const totalResults = allResults.length
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col bg-gradient-to-br from-blue-50 to-orange-50">
@@ -276,36 +316,23 @@ export default function RaceResultsDisplay() {
 
             {/* Right: Controls */}
             <div className="flex items-center gap-2">
-              {/* Category Type */}
-              <select
-                value={categoryType}
-                onChange={(e) => {
-                  setCategoryType(e.target.value as CategoryType)
-                  setCurrentIndex(0)
-                }}
-                className="rounded-md border border-gray-300 px-2 py-1.5 text-sm bg-white text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="overall">Overall</option>
-                <option value="gender">By Gender</option>
-                <option value="age">By Age</option>
-                <option value="gender-age">Gender & Age</option>
-              </select>
-
-              {/* Speed Control - Always visible when multiple categories */}
-              {categorizedResults.length > 1 && (
+              {/* Speed Control */}
+              {totalResults > 0 && (
                 <select
                   value={scrollSpeed}
                   onChange={(e) => setScrollSpeed(Number(e.target.value))}
                   className="rounded-md border border-gray-300 px-2 py-1.5 text-sm bg-white text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
-                  <option value={2000}>Fast</option>
-                  <option value={3000}>Medium</option>
-                  <option value={5000}>Slow</option>
+                  <option value={80}>Very Fast</option>
+                  <option value={50}>Fast</option>
+                  <option value={30}>Medium</option>
+                  <option value={15}>Slow</option>
+                  <option value={8}>Very Slow</option>
                 </select>
               )}
 
               {/* Auto Scroll Toggle */}
-              {categorizedResults.length > 1 && (
+              {totalResults > 0 && (
                 <button
                   onClick={() => setAutoScroll(!autoScroll)}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap ${
@@ -314,29 +341,8 @@ export default function RaceResultsDisplay() {
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
-                  {autoScroll ? '⏸ Pause' : '▶ Auto'}
+                  {autoScroll ? '⏸ Pause' : '▶ Auto Scroll'}
                 </button>
-              )}
-
-              {/* Manual Navigation */}
-              {!autoScroll && categorizedResults.length > 1 && (
-                <>
-                  <button
-                    onClick={() => setCurrentIndex((prev) => (prev - 1 + categorizedResults.length) % categorizedResults.length)}
-                    className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                  >
-                    ←
-                  </button>
-                  <span className="text-sm text-gray-600 whitespace-nowrap">
-                    {categorizedResults.length > 0 ? ((currentIndex % categorizedResults.length) + 1) : 0}/{categorizedResults.length}
-                  </span>
-                  <button
-                    onClick={() => setCurrentIndex((prev) => (prev + 1) % categorizedResults.length)}
-                    className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                  >
-                    →
-                  </button>
-                </>
               )}
             </div>
           </div>
@@ -352,116 +358,117 @@ export default function RaceResultsDisplay() {
               <h2 className="text-2xl font-bold">
                 {currentCategory.category}
               </h2>
-              <p className="text-sm opacity-90">
-                {currentCategory.results.filter(rp => {
-                  if (!searchQuery) return true
-                  const search = searchQuery.toLowerCase()
-                  const name = [rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ').toLowerCase()
-                  return name.includes(search) || rp.bib_number?.toString().includes(search)
-                }).length} {currentCategory.results.filter(rp => {
-                  if (!searchQuery) return true
-                  const search = searchQuery.toLowerCase()
-                  const name = [rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ').toLowerCase()
-                  return name.includes(search) || rp.bib_number?.toString().includes(search)
-                }).length === 1 ? 'Result' : 'Results'}
-              </p>
+              <div className="text-right">
+                <p className="text-lg font-semibold">
+                  {totalResults} Total Finishers
+                </p>
+              </div>
             </div>
 
             {/* Table */}
-            <div className="flex-1 overflow-auto">
-              <table className="w-full">
-                <thead className="bg-gray-100 sticky top-0 z-10 shadow-sm">
-                  <tr>
-                    <th className="text-left py-4 px-6 font-bold text-gray-700 text-lg border-b-2 border-gray-300">Place</th>
-                    <th className="text-left py-4 px-6 font-bold text-gray-700 text-lg border-b-2 border-gray-300">Name</th>
-                    <th className="text-center py-4 px-6 font-bold text-gray-700 text-lg border-b-2 border-gray-300">Bib</th>
-                    <th className="text-center py-4 px-6 font-bold text-gray-700 text-lg border-b-2 border-gray-300">Finish Time</th>
-                    <th className="text-right py-4 px-6 font-bold text-gray-700 text-lg border-b-2 border-gray-300">Race Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentCategory.results.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="text-center py-12 text-gray-500 text-xl">
-                        No finishers in this category yet
-                      </td>
-                    </tr>
-                  ) : (
-                    currentCategory.results.filter(rp => {
-                      if (!searchQuery) return true
-                      const search = searchQuery.toLowerCase()
-                      const name = [rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ').toLowerCase()
-                      return name.includes(search) || rp.bib_number?.toString().includes(search)
-                    }).map((rp, index) => {
-                      const finishTime = rp.finish_time.adjusted_time || rp.finish_time.finish_time
-                      const elapsed = formatElapsedTime(selectedRace.start_time!, finishTime)
-                      const clockTime = new Date(finishTime).toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit'
-                      })
+            <div className="flex-1 overflow-hidden relative">
+              {totalResults === 0 ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center text-gray-500 text-xl">
+                    No finishers yet
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full overflow-hidden flex flex-col">
+                  {/* Fixed Header */}
+                  <table className="w-full table-fixed">
+                    <thead className="bg-gray-100 shadow-sm">
+                      <tr>
+                        <th className="text-left py-2 px-4 font-bold text-gray-700 text-base border-b-2 border-gray-300 w-28">Place</th>
+                        <th className="text-left py-2 px-4 font-bold text-gray-700 text-base border-b-2 border-gray-300">Name</th>
+                        <th className="text-center py-2 px-4 font-bold text-gray-700 text-base border-b-2 border-gray-300 w-24">Bib</th>
+                        <th className="text-center py-2 px-4 font-bold text-gray-700 text-base border-b-2 border-gray-300 w-36">Finish Time</th>
+                        <th className="text-right py-2 px-4 font-bold text-gray-700 text-base border-b-2 border-gray-300 w-40">Race Time</th>
+                      </tr>
+                    </thead>
+                  </table>
 
-                      return (
-                        <tr
-                          key={rp.id}
-                          className={`border-b border-gray-200 hover:bg-gray-50 ${
-                            index === 0
-                              ? 'bg-yellow-50'
-                              : index === 1
-                              ? 'bg-gray-50'
-                              : index === 2
-                              ? 'bg-orange-50'
-                              : ''
-                          }`}
-                        >
-                          <td className="py-4 px-6">
-                            <div className="flex items-center gap-3">
-                              <span
-                                className={`text-2xl font-bold ${
+                  {/* Scrolling Content */}
+                  <div className="flex-1 overflow-hidden relative">
+                    <div
+                      className="absolute inset-0"
+                      style={{ transform: `translateY(-${scrollPosition}px)` }}
+                    >
+                      <table className="w-full table-fixed">
+                        <tbody>
+                          {allResults.map((rp, index) => {
+                            const finishTime = rp.finish_time.adjusted_time || rp.finish_time.finish_time
+                            const elapsed = formatElapsedTime(selectedRace.start_time!, finishTime)
+                            const clockTime = new Date(finishTime).toLocaleTimeString('en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit'
+                            })
+
+                            return (
+                              <tr
+                                key={rp.id}
+                                className={`border-b border-gray-200 hover:bg-gray-50 ${
                                   index === 0
-                                    ? 'text-yellow-600'
+                                    ? 'bg-yellow-50'
                                     : index === 1
-                                    ? 'text-gray-600'
+                                    ? 'bg-gray-50'
                                     : index === 2
-                                    ? 'text-orange-600'
-                                    : 'text-gray-700'
+                                    ? 'bg-orange-50'
+                                    : ''
                                 }`}
                               >
-                                {index + 1}
-                              </span>
-                              {index < 3 && (
-                                <span className="text-xl">
-                                  {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-4 px-6">
-                            <span className="text-xl font-semibold text-gray-900">
-                              {[rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ') || 'Unnamed'}
-                            </span>
-                          </td>
-                          <td className="py-4 px-6 text-center">
-                            <span className="inline-block bg-blue-100 text-blue-800 px-4 py-2 rounded-full font-bold text-lg">
-                              #{rp.bib_number}
-                            </span>
-                          </td>
-                          <td className="py-4 px-6 text-center">
-                            <span className="text-lg text-gray-700 font-mono">
-                              {clockTime}
-                            </span>
-                          </td>
-                          <td className="py-4 px-6 text-right">
-                            <span className="text-2xl font-mono font-bold text-blue-600">
-                              {elapsed}
-                            </span>
-                          </td>
-                        </tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
+                                <td className="py-2 px-4 w-28">
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={`text-lg font-bold ${
+                                        index === 0
+                                          ? 'text-yellow-600'
+                                          : index === 1
+                                          ? 'text-gray-600'
+                                          : index === 2
+                                          ? 'text-orange-600'
+                                          : 'text-gray-700'
+                                      }`}
+                                    >
+                                      {index + 1}
+                                    </span>
+                                    {index < 3 && (
+                                      <span className="text-base">
+                                        {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-2 px-4">
+                                  <span className="text-base font-semibold text-gray-900">
+                                    {[rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ') || 'Unnamed'}
+                                  </span>
+                                </td>
+                                <td className="py-2 px-4 text-center w-24">
+                                  <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-bold text-sm">
+                                    #{rp.bib_number}
+                                  </span>
+                                </td>
+                                <td className="py-2 px-4 text-center w-36">
+                                  <span className="text-sm text-gray-700 font-mono">
+                                    {clockTime}
+                                  </span>
+                                </td>
+                                <td className="py-2 px-4 text-right w-40">
+                                  <span className="text-lg font-mono font-bold text-blue-600">
+                                    {elapsed}
+                                  </span>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : (
