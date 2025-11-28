@@ -95,6 +95,39 @@ export default function RaceResultsDisplay() {
     return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
   }
 
+  const downloadCSV = () => {
+    if (!selectedRace || !currentCategory) return
+
+    // Create CSV content
+    const headers = ['Place', 'Name', 'Bib Number', 'Race Time']
+    const rows = allResults.map((rp, index) => {
+      const finishTime = rp.finish_time.adjusted_time || rp.finish_time.finish_time
+      const elapsed = formatElapsedTime(selectedRace.start_time!, finishTime)
+      const name = [rp.participant.first_name, rp.participant.last_name].filter(Boolean).join(' ') || 'Unnamed'
+
+      return [
+        index + 1,
+        `"${name}"`, // Wrap in quotes in case name has commas
+        rp.bib_number,
+        elapsed
+      ].join(',')
+    })
+
+    const csvContent = [headers.join(','), ...rows].join('\n')
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+
+    link.setAttribute('href', url)
+    link.setAttribute('download', `${selectedRace.name.replace(/\s+/g, '_')}_results.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   // Filter and categorize results
   const finishedRacers = raceParticipants.filter(rp => rp.finish_time && selectedRace?.start_time)
 
@@ -316,6 +349,16 @@ export default function RaceResultsDisplay() {
 
             {/* Right: Controls */}
             <div className="flex items-center gap-2">
+              {/* Download CSV */}
+              {totalResults > 0 && (
+                <button
+                  onClick={downloadCSV}
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium whitespace-nowrap"
+                >
+                  ⬇ Download CSV
+                </button>
+              )}
+
               {/* Speed Control */}
               {totalResults > 0 && (
                 <select
